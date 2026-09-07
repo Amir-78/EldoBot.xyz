@@ -1,4 +1,4 @@
-# Eldobot Source Code - Exposed
+# Eldobot.xyz Bot Source Code
 
 > **⚠️ DISCLAIMER: This repository contains the REVERSE ENGINEERED source code of Eldobot (https://eldobot.xyz). This is published to expose the truth about their overpriced, low-quality software.**
 
