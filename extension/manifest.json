@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Session Helper",
+  "version": "3.2",
+  "description": "Auto-syncs session cookies from the active site to your local helper application.",
+  "permissions": [
+    "cookies",
+    "alarms",
+    "storage",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://www.eldorado.gg/*",
+    "https://*.eldorado.gg/*",
+    "http://localhost/*",
+    "https://app.talkjs.com/*",
+    "https://*.talkjs.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.eldorado.gg/*",
+        "https://app.talkjs.com/*"
+      ],
+      "js": [
+        "content_talkjs.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

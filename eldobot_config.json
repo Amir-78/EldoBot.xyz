@@ -1,0 +1,15 @@
+{
+    "idToken":  "",
+    "cooldownSeconds":  0,
+    "cookieString":  "",
+    "messageTemplate":  "Hi {username}! I can do your {currentRank} -\u003e {desiredRank} on {server}. Accept the offer and we will start right away.",
+    "acceptLATAM":  true,
+    "discordWebhook":  "",
+    "acceptAP":  true,
+    "acceptNA":  true,
+    "autoMessage":  true,
+    "acceptEU":  true,
+    "autoOffer":  true,
+    "discordMessageWebhook":  "",
+    "email":  ""
+}

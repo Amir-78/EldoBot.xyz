@@ -1,0 +1,1957 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ELDOBOT — Auto-Offer Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05060a;--bg2:#080a10;--surface:#0c0e16;
+  --card:rgba(12,14,22,0.85);--card2:rgba(16,18,28,0.9);
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --gold:#f0b429;--gold2:#ffd166;--gold3:#ffaa00;
+  --gold-glow:rgba(240,180,41,0.3);--gold-dim:rgba(240,180,41,0.08);
+  --green:#00e676;--green-glow:rgba(0,230,118,0.25);
+  --red:#ff4d6d;--red-glow:rgba(255,77,109,0.25);
+  --blue:#4cc9f0;--blue-glow:rgba(76,201,240,0.2);
+  --purple:#a855f7;--purple-glow:rgba(168,85,247,0.2);
+  --text:#e8ecf4;--muted:#3d4460;--muted2:#7a85a0;
+}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;min-height:100vh;display:flex;overflow-x:hidden;}
+#particles-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.ambient{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;}
+.ambient-1{width:600px;height:600px;background:radial-gradient(circle,rgba(240,180,41,0.06),transparent 70%);top:-100px;left:150px;}
+.ambient-2{width:500px;height:500px;background:radial-gradient(circle,rgba(76,201,240,0.04),transparent 70%);bottom:-100px;right:100px;}
+.ambient-3{width:400px;height:400px;background:radial-gradient(circle,rgba(168,85,247,0.03),transparent 70%);top:40%;left:40%;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:230px;background:linear-gradient(180deg,rgba(10,12,20,0.98),rgba(6,8,14,0.98));border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;backdrop-filter:blur(20px);box-shadow:4px 0 40px rgba(0,0,0,0.6),inset -1px 0 0 rgba(255,255,255,0.04);}
+.brand{padding:28px 22px 22px;border-bottom:1px solid var(--border);position:relative;}
+.brand::after{content:'';position:absolute;bottom:0;left:22px;right:22px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.4;}
+.brand-row{display:flex;align-items:center;gap:12px;margin-bottom:2px;}
+.brand-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#ff8c00);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px;color:#000;font-weight:900;box-shadow:0 4px 20px var(--gold-glow),0 0 0 1px rgba(240,180,41,0.3);position:relative;overflow:hidden;}
+.brand-icon::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.2),transparent);border-radius:10px;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;background:linear-gradient(135deg,#fff 20%,var(--gold) 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.brand-ver{font-size:9px;color:var(--muted2);letter-spacing:3px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;}
+.brand-clock{font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:6px;letter-spacing:1px;}
+.nav{flex:1;padding:18px 0;overflow-y:auto;}
+.nav-section{font-size:8px;color:var(--muted);letter-spacing:3px;padding:14px 22px 6px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 22px;cursor:pointer;color:var(--muted2);font-size:12px;font-weight:500;letter-spacing:0.3px;transition:all .2s;border-left:2px solid transparent;position:relative;user-select:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03);}
+.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:linear-gradient(90deg,var(--gold-dim),transparent);}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 6px var(--gold));}
+.nav-icon{font-size:15px;width:20px;text-align:center;transition:filter .2s;}
+.nav-badge{margin-left:auto;background:var(--gold);color:#000;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;font-family:'JetBrains Mono',monospace;}
+.sidebar-footer{padding:16px 22px;border-top:1px solid var(--border);background:rgba(0,0,0,0.3);}
+.status-chip{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);margin-bottom:6px;}
+.status-label{font-size:8px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+.status-val{font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;margin-left:auto;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green),0 0 12px rgba(0,230,118,0.4);}
+.dot-red{background:var(--red);box-shadow:0 0 6px var(--red);}
+.dot-yellow{background:var(--gold);box-shadow:0 0 6px var(--gold);}
+@keyframes breathe{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.6;transform:scale(0.9);}}
+.dot-green{animation:breathe 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}} .pulse{animation:pulse 2s ease-in-out infinite;}
+.main{margin-left:230px;flex:1;padding:28px;min-height:100vh;position:relative;z-index:1;}
+.page{display:none}.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.page.active{animation:pageIn .25s ease;}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:22px;border-bottom:1px solid var(--border);position:relative;}
+.page-header::after{content:'';position:absolute;bottom:-1px;left:0;width:80px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);}
+.page-eyebrow{font-size:9px;color:var(--muted2);letter-spacing:3px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;background:linear-gradient(135deg,#fff 30%,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+.page-subtitle{font-size:10px;color:var(--muted2);margin-top:4px;letter-spacing:1px;}
+.bot-btn{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;padding:14px 32px;border-radius:12px;transition:all .25s;position:relative;overflow:hidden;}
+.btn-start{background:linear-gradient(135deg,var(--green),#00c853);color:#000;box-shadow:0 4px 20px var(--green-glow),0 0 0 1px rgba(0,230,118,0.3);}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--green-glow);}
+.btn-stop{background:linear-gradient(135deg,var(--red),#d32f2f);color:#fff;box-shadow:0 4px 20px var(--red-glow);}
+.btn-stop:hover{transform:translateY(-2px);}
+.bot-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);pointer-events:none;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;position:relative;overflow:hidden;backdrop-filter:blur(20px);cursor:default;transition:transform .25s,border-color .25s,box-shadow .25s;transform-style:preserve-3d;}
+.stat-card:hover{transform:translateY(-4px);border-color:var(--border2);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);}
+.stat-card::after{content:'';position:absolute;inset:0;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,0.02),transparent 60%);pointer-events:none;}
+.stat-card.gold{border-color:rgba(240,180,41,0.15);} .stat-card.gold:hover{box-shadow:0 12px 40px rgba(240,180,41,0.12);}
+.stat-card.green{border-color:rgba(0,230,118,0.15);} .stat-card.green:hover{box-shadow:0 12px 40px rgba(0,230,118,0.12);}
+.stat-card.blue{border-color:rgba(76,201,240,0.15);} .stat-card.blue:hover{box-shadow:0 12px 40px rgba(76,201,240,0.12);}
+.stat-card.purple{border-color:rgba(168,85,247,0.15);} .stat-card.purple:hover{box-shadow:0 12px 40px rgba(168,85,247,0.12);}
+.stat-label{font-size:9px;color:var(--muted2);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;font-family:'JetBrains Mono',monospace;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:2px;line-height:1;transition:all .4s;}
+.stat-val.gold{color:var(--gold);text-shadow:0 0 30px rgba(240,180,41,0.4);}
+.stat-val.green{color:var(--green);text-shadow:0 0 30px rgba(0,230,118,0.4);}
+.stat-val.blue{color:var(--blue);text-shadow:0 0 30px rgba(76,201,240,0.4);}
+.stat-val.purple{color:var(--purple);text-shadow:0 0 30px rgba(168,85,247,0.4);}
+.stat-sub{font-size:10px;color:var(--muted2);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+.stat-icon{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:36px;opacity:0.05;}
+.stat-glow-bar{position:absolute;bottom:0;left:0;height:2px;border-radius:0 0 16px 16px;transition:width 1s ease;}
+.stat-glow-bar.gold{background:linear-gradient(90deg,transparent,var(--gold));}
+.stat-glow-bar.green{background:linear-gradient(90deg,transparent,var(--green));}
+.stat-glow-bar.blue{background:linear-gradient(90deg,transparent,var(--blue));}
+.stat-glow-bar.purple{background:linear-gradient(90deg,transparent,var(--purple));}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden;position:relative;backdrop-filter:blur(20px);transition:border-color .2s,box-shadow .2s;}
+.card:hover{border-color:var(--border2);box-shadow:0 8px 40px rgba(0,0,0,0.3);}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);}
+.card-header{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);}
+.card-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text);}
+.card-body{padding:18px 20px;}
+.glass-panel{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;backdrop-filter:blur(10px);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.page-content{max-width:1400px;}
+.btn{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;border:1px solid transparent;cursor:pointer;padding:9px 18px;border-radius:8px;transition:all .2s;position:relative;overflow:hidden;}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1),transparent);pointer-events:none;}
+.btn-primary{background:linear-gradient(135deg,var(--gold),#e09000);color:#000;box-shadow:0 4px 15px rgba(240,180,41,0.3);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(240,180,41,0.4);}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#0099cc);color:#000;}
+.btn-blue:hover{transform:translateY(-1px);}
+.btn-secondary{background:rgba(255,255,255,0.05);color:var(--text);border-color:var(--border2);}
+.btn-secondary:hover{background:rgba(255,255,255,0.08);}
+.btn-danger{background:rgba(255,77,109,0.15);color:var(--red);border-color:rgba(255,77,109,0.3);}
+.btn-danger:hover{background:rgba(255,77,109,0.25);}
+.btn-sm{font-size:10px;padding:6px 12px;}
+.btn-full{width:100%;text-align:center;}
+.tog-list{display:flex;flex-direction:column;gap:2px;}
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:8px;transition:background .15s;}
+.tog-row:hover{background:rgba(255,255,255,0.03);}
+.tog-label{font-size:12px;color:var(--muted2);font-weight:500;}
+.switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;position:absolute;}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,0.08);border-radius:22px;transition:.25s;border:1px solid var(--border);}
+.slider::before{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;bottom:2px;left:2px;transition:.25s;box-shadow:0 2px 4px rgba(0,0,0,0.4);}
+.switch input:checked+.slider{background:var(--gold);border-color:var(--gold);}
+.switch input:checked+.slider::before{transform:translateX(18px);background:#000;}
+.input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-family:'Space Grotesk',sans-serif;font-size:12px;transition:border .2s,box-shadow .2s;}
+.input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(240,180,41,0.1);}
+.input::placeholder{color:var(--muted);}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:9px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;font-family:'JetBrains Mono',monospace;}
+.log-box{background:rgba(3,4,8,0.9);border:1px solid var(--border);border-radius:10px;padding:14px;height:300px;overflow-y:auto;font-size:11px;line-height:1.9;font-family:'JetBrains Mono',monospace;box-shadow:inset 0 2px 20px rgba(0,0,0,0.6);}
+.log-box::-webkit-scrollbar{width:4px;} .log-box::-webkit-scrollbar-track{background:transparent;} .log-box::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+@keyframes logIn{from{opacity:0;transform:translateX(-4px);}to{opacity:1;transform:translateX(0);}}
+.le-success{color:var(--green);animation:logIn .2s ease;}
+.le-err{color:var(--red);animation:logIn .2s ease;}
+.le-warn{color:var(--gold);animation:logIn .2s ease;}
+.le-info{color:#3d4a62;}
+.act-table{width:100%;border-collapse:collapse;}
+.act-table th{font-size:9px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:10px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);}
+.act-table td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle;}
+.act-table tr:hover td{background:rgba(255,255,255,0.02);}
+.empty-row{text-align:center;color:var(--muted);padding:40px!important;}
+.badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;}
+.badge-offer{background:rgba(0,230,118,0.15);color:var(--green);border:1px solid rgba(0,230,118,0.3);}
+.badge-msg{background:rgba(168,85,247,0.15);color:var(--purple);border:1px solid rgba(168,85,247,0.3);}
+.badge-rejected{background:rgba(255,77,109,0.12);color:var(--red);border:1px solid rgba(255,77,109,0.25);}
+.badge-error{background:rgba(255,77,109,0.2);color:var(--red);border:1px solid rgba(255,77,109,0.4);}
+.badge-immortal{background:rgba(240,180,41,0.15);color:var(--gold);border:1px solid rgba(240,180,41,0.3);}
+.badge-new{background:rgba(76,201,240,0.15);color:var(--blue);border:1px solid rgba(76,201,240,0.3);}
+.badge-seen{background:rgba(255,255,255,0.06);color:var(--muted2);border:1px solid var(--border);}
+.badge-sold{background:rgba(240,180,41,0.2);color:var(--gold);border:1px solid rgba(240,180,41,0.5);font-weight:800;}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:4px;}
+.tab-btn{flex:1;text-align:center;padding:9px;border-radius:7px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:none;border:none;color:var(--muted2);transition:all .2s;}
+.tab-btn.active{background:linear-gradient(135deg,var(--gold),#e09000);color:#000;box-shadow:0 2px 12px rgba(240,180,41,0.3);}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.tier-card{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px;transition:border-color .2s;}
+.tier-card:hover{border-color:var(--border2);}
+.tier-name{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-family:'JetBrains Mono',monospace;}
+.tier-field{margin-bottom:6px;}
+.tier-field label{display:block;font-size:8px;color:var(--muted);letter-spacing:1.5px;margin-bottom:3px;font-family:'JetBrains Mono',monospace;}
+.rules-table{width:100%;border-collapse:collapse;}
+.rules-table th{font-size:9px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:9px 12px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);}
+.rules-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:11px;font-family:'JetBrains Mono',monospace;}
+.rm-btn{font-size:9px;padding:4px 10px;border-radius:5px;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted2);font-family:'JetBrains Mono',monospace;transition:all .15s;}
+.rm-btn:hover{border-color:var(--red);color:var(--red);}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.inline-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@keyframes flash{0%{background:rgba(240,180,41,0.2);}100%{background:transparent;}}
+.stat-flash{animation:flash .5s ease;}
+::-webkit-scrollbar{width:5px;height:5px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.cookie-status-box{padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.02);font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted2);margin-top:10px;transition:all .3s;}
+@keyframes feedIn{from{opacity:0;transform:translateY(-10px);background:rgba(240,180,41,0.1);}to{opacity:1;transform:translateY(0);background:transparent;}}
+.feed-new{animation:feedIn .5s ease;}
+.feed-offer td{border-left:2px solid var(--green);}
+.feed-rejected td{border-left:2px solid rgba(255,255,255,0.1);}
+.feed-immortal td{border-left:2px solid var(--gold);}
+.feed-error td{border-left:2px solid var(--red);}
+.feed-sold td{border-left:3px solid var(--gold);background:rgba(240,180,41,0.04);}
+.stat-card{position:relative;padding:20px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);overflow:hidden;transition:transform .2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card.gold{border-color:rgba(240,180,41,0.3);background:rgba(240,180,41,0.05);}
+.stat-card.green{border-color:rgba(0,230,118,0.3);background:rgba(0,230,118,0.05);}
+.stat-card.blue{border-color:rgba(76,201,240,0.3);background:rgba(76,201,240,0.05);}
+.stat-card.purple{border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.05);}
+.stat-label{font-size:9px;letter-spacing:3px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-transform:uppercase;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:1;}
+.stat-val.gold{color:var(--gold);text-shadow:0 0 20px rgba(240,180,41,0.4);}
+.stat-val.green{color:var(--green);text-shadow:0 0 20px rgba(0,230,118,0.3);}
+.stat-val.blue{color:var(--blue);text-shadow:0 0 20px rgba(76,201,240,0.3);}
+.stat-val.purple{color:var(--purple);text-shadow:0 0 20px rgba(168,85,247,0.3);}
+.stat-sub{font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.stat-icon{position:absolute;right:16px;top:16px;font-size:28px;opacity:0.15;}
+@keyframes feedIn{from{opacity:0;transform:translateY(-8px);background:rgba(240,180,41,0.08);}to{opacity:1;transform:translateY(0);background:transparent;}}
+.feed-new{animation:feedIn .4s ease;}
+.feed-offer td{border-left:2px solid var(--green);}
+.feed-rejected td{border-left:2px solid var(--muted);}
+.feed-immortal td{border-left:2px solid var(--gold);}
+.feed-error td{border-left:2px solid var(--red);}
+.feed-sold td{border-left:3px solid var(--gold);background:rgba(240,180,41,0.04);}
+.stat-card{position:relative;padding:20px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);overflow:hidden;transition:transform .2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card.gold{border-color:rgba(240,180,41,0.3);background:rgba(240,180,41,0.05);}
+.stat-card.green{border-color:rgba(0,230,118,0.3);background:rgba(0,230,118,0.05);}
+.stat-card.blue{border-color:rgba(76,201,240,0.3);background:rgba(76,201,240,0.05);}
+.stat-card.purple{border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.05);}
+.stat-label{font-size:9px;letter-spacing:3px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-transform:uppercase;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:1;}
+.stat-val.gold{color:var(--gold);text-shadow:0 0 20px rgba(240,180,41,0.4);}
+.stat-val.green{color:var(--green);text-shadow:0 0 20px rgba(0,230,118,0.3);}
+.stat-val.blue{color:var(--blue);text-shadow:0 0 20px rgba(76,201,240,0.3);}
+.stat-val.purple{color:var(--purple);text-shadow:0 0 20px rgba(168,85,247,0.3);}
+.stat-sub{font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.stat-icon{position:absolute;right:16px;top:16px;font-size:28px;opacity:0.15;}
+/* Lock state for pricing/netwin toggles */
+.tog-row.is-locked{background:rgba(255,77,109,0.05);border-left:2px solid rgba(255,77,109,0.25);border-radius:6px;padding-left:10px;}
+.tog-row.is-locked .tog-label{color:var(--muted)!important;}
+.tog-row.is-unlocked{background:rgba(0,230,118,0.04);border-left:2px solid rgba(0,230,118,0.2);border-radius:6px;padding-left:10px;}
+.tok-badge{display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;margin-left:6px;vertical-align:middle;flex-shrink:0;}
+.tok-badge-on{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.25);}
+.tok-badge-locked{background:rgba(255,77,109,0.12);color:var(--red);border:1px solid rgba(255,77,109,0.25);}
+/* Whole-card region state */
+.card.region-on{border-color:rgba(0,230,118,0.35)!important;transition:border-color .3s;}
+.card.region-on .card-header{background:rgba(0,230,118,0.05);transition:background .3s;}
+.card.region-off{border-color:rgba(255,77,109,0.35)!important;transition:border-color .3s;}
+.card.region-off .card-header{background:rgba(255,77,109,0.05);transition:background .3s;}
+/* Duo section lock */
+.duo-section.duo-off{opacity:0.5;pointer-events:none;border:1px solid rgba(255,77,109,0.2);border-radius:8px;padding:8px;background:rgba(255,77,109,0.03);}
+.duo-section.duo-on{border:1px solid rgba(168,85,247,0.2);border-radius:8px;padding:8px;background:rgba(168,85,247,0.02);}
+</style>
+</head>
+<body>
+
+<div id="expiry-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:linear-gradient(90deg,#7f1d1d,#dc2626,#7f1d1d);color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 16px rgba(220,38,38,.4);">
+  ⚠️ Your license expires in <span id="expiry-days"></span> — renew now to keep the bot running.
+  <span onclick="document.getElementById('expiry-banner').style.display='none'" style="cursor:pointer;margin-left:18px;opacity:.7;font-weight:400;">✕</span>
+</div>
+<canvas id="particles-canvas"></canvas>
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
+<div class="ambient ambient-3"></div>
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-row">
+      <div class="brand-icon">E</div>
+      <div><div class="brand-name">ELDOBOT</div><div class="brand-ver">Auto-Offer Engine v14</div></div>
+    </div>
+    <div class="brand-clock" id="live-clock">—</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Control</div>
+    <div class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">⚡</span>Dashboard</div>
+    <div class="nav-item" onclick="nav('activity',this)"><span class="nav-icon">📋</span>Activity<span class="nav-badge" id="nav-badge-activity" style="display:none">0</span></div>
+    <div class="nav-section">Configure</div>
+    <div class="nav-item" onclick="nav('pricing',this)"><span class="nav-icon">💰</span>Pricing</div>
+    <div class="nav-item" onclick="nav('netwin',this)"><span class="nav-icon">🎮</span>Net Wins</div>
+    <div class="nav-item" onclick="nav('settings',this)"><span class="nav-icon">⚙️</span>Settings</div>
+    <div class="nav-section">Orders</div>
+    <div class="nav-item" onclick="nav('stats',this)"><span class="nav-icon">📊</span>Statistics</div>
+    <div class="nav-item" onclick="nav('sold',this)" id="nav-sold" style="position:relative">
+      <span class="nav-icon">💰</span>Sold Orders
+      <span id="sold-notif" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:var(--gold);color:#000;font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;font-family:'JetBrains Mono',monospace;box-shadow:0 0 8px var(--gold-glow);animation:breathe 1.5s infinite;">0</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="status-chip">
+      <div class="dot dot-red" id="sb-dot"></div>
+      <div><div class="status-label">BOT STATUS</div></div>
+      <div class="status-val" id="sb-bot" style="color:var(--muted2)">Stopped</div>
+    </div>
+    <div class="status-chip">
+      <div class="dot dot-yellow pulse" id="tok-dot"></div>
+      <div><div class="status-label">TOKEN</div></div>
+      <div class="status-val" id="sb-token" style="color:var(--green)">—</div>
+    </div>
+    <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:8px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;" id="sb-email">—</div>
+    <div id="license-expiry-chip" style="margin-top:8px;padding:8px 10px;background:rgba(255,203,5,.06);border:1px solid rgba(255,203,5,.2);border-radius:6px;text-align:center;display:none;">
+      <div style="font-size:8px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;">LICENSE EXPIRES</div>
+      <div id="license-expiry-val" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--gold);">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="page-header">
+    <div><div class="page-eyebrow">Bot Control</div><div class="page-title">Dashboard</div><div class="page-subtitle">Live status · Real-time order processing</div></div>
+    <button id="main-btn" class="bot-btn btn-start" onclick="toggleBot()">▶ START BOT</button>
+  </div>
+  <!-- HEALTH BAR -->
+  <div id="health-bar" style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:11px;">
+    <div class="hpill" id="hp-bot" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,0.02);"><span class="dot dot-red" id="hp-bot-dot"></span><span style="color:var(--muted);">BOT</span><b id="hp-bot-val" style="color:var(--muted2)">stopped</b></div>
+    <div class="hpill" id="hp-tok" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,0.02);"><span style="color:var(--muted);">TOKEN</span><b id="hp-tok-val" style="color:var(--muted2)">—</b></div>
+    <div class="hpill" id="hp-last" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,0.02);"><span style="color:var(--muted);">LAST ORDER</span><b id="hp-last-val" style="color:var(--muted2)">—</b></div>
+    <div class="hpill" id="hp-today" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:rgba(0,230,118,0.05);border-color:rgba(0,230,118,0.2);"><span style="color:var(--muted);">TODAY</span><b id="hp-today-val" style="color:var(--green)">$0 · 0 offers</b></div>
+    <div class="hpill" id="hp-week" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:rgba(76,201,240,0.05);border-color:rgba(76,201,240,0.2);"><span style="color:var(--muted);">7 DAYS</span><b id="hp-week-val" style="color:var(--blue)">$0 · 0 offers</b></div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card blue"><div class="stat-label">Requests Seen</div><div class="stat-val blue" id="s-seen">0</div><div class="stat-sub" id="s-seen-sub">Watching for orders...</div><div class="stat-icon">📡</div><div class="stat-glow-bar blue" id="bar-seen" style="width:0%"></div></div>
+    <div class="stat-card green"><div class="stat-label">Offers Sent</div><div class="stat-val green" id="s-offered">0</div><div class="stat-sub" id="s-rate-sub">Success rate: —</div><div class="stat-icon">✅</div><div class="stat-glow-bar green" id="bar-offered" style="width:0%"></div></div>
+    <div class="stat-card purple"><div class="stat-label">Messages Sent</div><div class="stat-val purple" id="s-msg">0</div><div class="stat-sub">Auto-messages delivered</div><div class="stat-icon">💬</div><div class="stat-glow-bar purple" id="bar-msg" style="width:0%"></div></div>
+    <div class="stat-card" style="border-color:rgba(255,77,109,0.3);background:rgba(255,77,109,0.05);"><div class="stat-label">Errors</div><div class="stat-val" id="s-err" style="color:var(--red);text-shadow:0 0 20px rgba(255,77,109,0.4)">0</div><div class="stat-sub">Processing errors</div><div class="stat-icon">⚠</div></div>
+  </div>
+  <!-- LIVE ELDORADO STATS -->
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:24px;">
+    <div class="glass-panel" style="border-color:rgba(240,180,41,0.4);background:rgba(240,180,41,0.05);text-align:center;">
+      <div style="font-size:8px;color:var(--gold);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">⏳ PENDING</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);text-shadow:0 0 20px rgba(240,180,41,0.4)" id="stat-pending">—</div>
+    </div>
+    <div class="glass-panel" style="border-color:rgba(76,201,240,0.15);text-align:center;">
+      <div style="font-size:8px;color:var(--blue);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📦 DELIVERED</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--blue)" id="stat-delivered">—</div>
+    </div>
+    <div class="glass-panel" style="border-color:rgba(0,230,118,0.15);text-align:center;">
+      <div style="font-size:8px;color:var(--green);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">✅ COMPLETED</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--green)" id="stat-completed">—</div>
+    </div>
+    <div class="glass-panel" style="border-color:rgba(255,77,109,0.15);text-align:center;">
+      <div style="font-size:8px;color:var(--red);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">❌ CANCELLED</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--muted2)" id="stat-cancelled">—</div>
+    </div>
+    <div class="glass-panel" style="border-color:rgba(168,85,247,0.15);text-align:center;">
+      <div style="font-size:8px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📬 RECEIVED</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--purple)" id="stat-received">—</div>
+    </div>
+    <div class="glass-panel" style="border-color:rgba(255,77,109,0.15);text-align:center;">
+      <div style="font-size:8px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">⏭ SKIPPED</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--muted2)" id="skip-count">0</div>
+    </div>
+  </div>
+  <!-- HIDDEN IDs for backward compat -->
+  <div style="display:none"><span id="eu-count">0</span><span id="na-count">0</span><span id="sold-count">0</span></div>
+  <div class="two-col">
+    <!-- PROFILE SWITCHER -->
+    <div class="card" style="border-color:rgba(240,180,41,0.4);background:rgba(240,180,41,0.03);margin-bottom:16px;grid-column:1/-1;">
+      <div class="card-header"><span class="card-title">📋 Pricing Profile</span><span id="profile-active-label" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--gold);margin-left:12px;"></span></div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <button id="profile1-btn" onclick="setProfile(1)" class="btn btn-primary" style="min-width:220px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;">⚡ Profile 1 — Normal</button>
+          <button id="profile2-btn" onclick="setProfile(2)" class="btn btn-secondary" style="min-width:220px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;">🐢 Profile 2 — Slow Delivery</button>
+          <div id="profile-info" style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;line-height:2;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚙ Quick Settings</span></div>
+      <div class="card-body">
+        <div class="tog-list">
+          <div class="tog-row"><div class="tog-label">🐢 Slow Mode (delay +1 tier)</div><label class="switch"><input type="checkbox" id="tog-slowmode" onchange="save('slowMode',this.checked)"><div class="slider"></div></label></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0 0;">
+          <span style="font-size:12px;color:var(--muted2)">Cooldown (sec)</span>
+          <input class="input" type="number" id="cooldown" value="0" min="0" max="60" style="width:80px;text-align:center;" onchange="save('cooldownSeconds',parseInt(this.value))">
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 0 0;">
+          <span style="font-size:12px;color:var(--muted2)">🕒 Delivery time</span>
+          <select class="input" id="delivery-select" style="width:130px;" onchange="save('deliveryEnumValue',parseInt(this.value))" title="Delivery time the bot puts on every auto-priced offer (custom rules use their own delivery)">
+            <option value="0">20 min</option><option value="1">1 hour</option><option value="2">2 hours</option>
+            <option value="3">3 hours</option><option value="4">5 hours</option><option value="5">8 hours</option>
+            <option value="6">12 hours</option><option value="7">1 day</option><option value="8">2 days</option>
+            <option value="9">3 days</option><option value="10">7 days</option><option value="11">14 days</option>
+          </select>
+        </div>
+        <div style="font-size:9px;color:var(--muted2);margin-top:10px;font-family:'JetBrains Mono',monospace;line-height:1.8;">Auto-Offer/Message → Settings<br>Region/NW/Duo/Asc/Immo → Pricing tabs</div>
+      </div>
+    </div>
+    <div class="card" id="live-log-card" style="display:none">
+      <div class="card-header"><span class="card-title">📡 Live Log</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center"><div id="log-status" style="width:6px;height:6px;border-radius:50%;background:var(--muted);"></div><button class="btn btn-secondary btn-sm" onclick="logs_data=[];document.getElementById('log-box').innerHTML='';logIdx=0;">Clear</button></div></div>
+      <div class="card-body" style="padding:12px;"><div class="log-box" id="log-box"></div></div>
+    </div>
+  </div>
+
+  <!-- LIVE ACTIVITY FEED -->
+  <div class="card" style="margin-top:0">
+    <div class="card-header" style="border-bottom:1px solid var(--border)">
+      <span class="card-title" style="background:linear-gradient(135deg,var(--gold),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">⚡ LIVE FEED</span>
+      <span id="feed-count" style="font-size:9px;color:var(--muted2);margin-left:8px;font-family:'JetBrains Mono',monospace;">No activity yet</span>
+      <div id="feed-pulse" style="width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:auto;transition:all .3s;"></div>
+    </div>
+    <div style="overflow:auto;max-height:280px;" id="live-feed-wrapper">
+      <table style="width:100%;border-collapse:collapse;" id="live-feed-table">
+        <thead>
+          <tr>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);white-space:nowrap;">Time</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Type</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Region</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Boost</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Price</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Account</th>
+          </tr>
+        </thead>
+        <tbody id="live-feed-body">
+          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;font-size:11px;font-family:'JetBrains Mono',monospace;">Waiting for orders...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LIVE ACTIVITY FEED -->
+  <div class="card" style="margin-top:0">
+    <div class="card-header">
+      <span class="card-title" style="background:linear-gradient(135deg,var(--gold),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">⚡ LIVE FEED</span>
+      <span id="feed-count" style="font-size:9px;color:var(--muted2);margin-left:8px;font-family:'JetBrains Mono',monospace;">No activity yet</span>
+      <div id="feed-pulse" style="width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:auto;transition:all .3s;"></div>
+    </div>
+    <div style="overflow:auto;max-height:280px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);white-space:nowrap;">Time</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Type</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Region</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Boost</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Price</th>
+            <th style="font-size:8px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);">Account</th>
+          </tr>
+        </thead>
+        <tbody id="live-feed-body">
+          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;font-size:11px;font-family:'JetBrains Mono',monospace;">Waiting for orders...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITY -->
+<div id="page-activity" class="page">
+  <div class="page-header">
+    <div><div class="page-eyebrow">History</div><div class="page-title">Activity Log</div><div class="page-subtitle">All boosting requests and offers sent</div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select class="input" id="type-filter" onchange="renderActivity()" style="width:140px"><option value="">All Types</option><option value="Offer Sent">Offers</option><option value="auto_message">Messages</option><option value="Rejected">Rejected</option><option value="Error">Errors</option><option value="Immortal">Immortal</option><option value="New">New</option><option value="Sold Order">💰 Sold Orders</option></select>
+      <button class="btn btn-danger btn-sm" onclick="clearActivity()">Clear</button>
+    </div>
+  </div>
+  <div class="page-content"><div class="card"><div class="card-body" style="padding:0;overflow:auto;"><table class="act-table"><thead><tr><th>Time</th><th>Account</th><th>Type</th><th>Region</th><th>Boost</th><th>Price</th><th>Details</th></tr></thead><tbody id="act-body"><tr><td colspan="7" class="empty-row">No activity yet</td></tr></tbody></table></div></div></div>
+</div>
+
+<!-- PRICING -->
+<div id="page-pricing" class="page">
+  <div class="page-header"><div><div class="page-eyebrow">Configuration</div><div class="page-title">Pricing & Delivery</div><div class="page-subtitle">Per-tier step pricing (custom rules take priority) + duo pricing per region</div></div></div>
+  <div class="page-content">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-body" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:12px;font-weight:600;color:var(--gold)">📐 Pro-rate first step by RR</span>
+          <span style="font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace">0-9 RR = full price · 10-84 RR = linear discount · 85-99 RR = capped at 84% off</span>
+        </div>
+        <label class="switch" style="margin-left:auto"><input type="checkbox" id="tog-prorate-rr" onchange="saveNow('prorateRR',this.checked)"><div class="slider"></div></label>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn" onclick="switchPricingTab('pricing-eu',this)">🇪🇺 EU</button>
+      <button class="tab-btn" onclick="switchPricingTab('pricing-na',this)">🇺🇸 NA</button>
+      <button class="tab-btn" onclick="switchPricingTab('pricing-latam',this)">🌎 LATAM</button>
+      <button class="tab-btn" onclick="switchPricingTab('pricing-ap',this)">🌏 AP</button>
+      <button class="tab-btn active" onclick="switchPricingTab('custom',this)">📋 Custom Rules</button>
+    </div>
+
+    <!-- EU PRICING TAB -->
+    <div id="tab-pricing-eu" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🇪🇺</span><span class="card-title" style="color:var(--blue)">EU PRICING</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept EU</span><label class="switch"><input type="checkbox" id="ptog-eu" onchange="saveNow('acceptEU',this.checked);syncLock(this);syncCard('pricing-eu')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div>
+              <div class="tog-list" id="pricing-togs-eu">
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;text-transform:uppercase;">Order Settings</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="ptog-eu-duo" onchange="saveNow('acceptEUDuo',this.checked);syncLock(this);syncDuoSection('pricing-eu')"><div class="slider"></div></label></div>
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 4px;text-transform:uppercase;">Solo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="ptog-eu-asc1" onchange="saveNow('acceptEUAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="ptog-eu-asc2" onchange="saveNow('acceptEUAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="ptog-eu-asc3" onchange="saveNow('acceptEUAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="ptog-eu-immo1" onchange="saveNow('acceptEUImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="ptog-eu-immo2" onchange="saveNow('acceptEUImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="ptog-eu-immo3" onchange="saveNow('acceptEUImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="ptog-eu-radiant" onchange="saveNow('acceptEURadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="duo-section" id="pricing-eu-duo-sec">
+                  <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="ptog-eu-asc1duo" onchange="saveNow('acceptEUAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="ptog-eu-asc2duo" onchange="saveNow('acceptEUAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="ptog-eu-asc3duo" onchange="saveNow('acceptEUAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="ptog-eu-immo1duo" onchange="saveNow('acceptEUImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="ptog-eu-immo2duo" onchange="saveNow('acceptEUImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="ptog-eu-immo3duo" onchange="saveNow('acceptEUImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="ptog-eu-radiantduo" onchange="saveNow('acceptEURadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--blue);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Solo $/100RR + Delivery hrs</div>
+              <div class="tier-grid" id="tier-solo-EU"></div>
+              <hr class="divider">
+              <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Duo $/100RR</div>
+              <div class="tier-grid" id="tier-duo-EU"></div>
+              <button class="btn btn-blue btn-full" style="margin-top:14px" onclick="savePricingRegion('EU')">💾 Save EU Prices</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NA PRICING TAB -->
+    <div id="tab-pricing-na" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🇺🇸</span><span class="card-title" style="color:var(--gold)">NA PRICING</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept NA</span><label class="switch"><input type="checkbox" id="ptog-na" onchange="saveNow('acceptNA',this.checked);syncLock(this);syncCard('pricing-na')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div>
+              <div class="tog-list" id="pricing-togs-na">
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;text-transform:uppercase;">Order Settings</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="ptog-na-duo" onchange="saveNow('acceptNADuo',this.checked);syncLock(this);syncDuoSection('pricing-na')"><div class="slider"></div></label></div>
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 4px;text-transform:uppercase;">Solo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="ptog-na-asc1" onchange="saveNow('acceptNAAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="ptog-na-asc2" onchange="saveNow('acceptNAAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="ptog-na-asc3" onchange="saveNow('acceptNAAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="ptog-na-immo1" onchange="saveNow('acceptNAImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="ptog-na-immo2" onchange="saveNow('acceptNAImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="ptog-na-immo3" onchange="saveNow('acceptNAImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="ptog-na-radiant" onchange="saveNow('acceptNARadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="duo-section" id="pricing-na-duo-sec">
+                  <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="ptog-na-asc1duo" onchange="saveNow('acceptNAAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="ptog-na-asc2duo" onchange="saveNow('acceptNAAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="ptog-na-asc3duo" onchange="saveNow('acceptNAAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="ptog-na-immo1duo" onchange="saveNow('acceptNAImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="ptog-na-immo2duo" onchange="saveNow('acceptNAImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="ptog-na-immo3duo" onchange="saveNow('acceptNAImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="ptog-na-radiantduo" onchange="saveNow('acceptNARadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--gold);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Solo $/100RR + Delivery hrs</div>
+              <div class="tier-grid" id="tier-solo-NA"></div>
+              <hr class="divider">
+              <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Duo $/100RR</div>
+              <div class="tier-grid" id="tier-duo-NA"></div>
+              <button class="btn btn-primary btn-full" style="margin-top:14px" onclick="savePricingRegion('NA')">💾 Save NA Prices</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LATAM PRICING TAB -->
+    <div id="tab-pricing-latam" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🌎</span><span class="card-title" style="color:var(--green)">LATAM PRICING</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept LATAM</span><label class="switch"><input type="checkbox" id="ptog-latam" onchange="saveNow('acceptLATAM',this.checked);syncLock(this);syncCard('pricing-latam')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div>
+              <div class="tog-list" id="pricing-togs-latam">
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;text-transform:uppercase;">Order Settings</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="ptog-latam-duo" onchange="saveNow('acceptLATAMDuo',this.checked);syncLock(this);syncDuoSection('pricing-latam')"><div class="slider"></div></label></div>
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 4px;text-transform:uppercase;">Solo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="ptog-latam-asc1" onchange="saveNow('acceptLATAMAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="ptog-latam-asc2" onchange="saveNow('acceptLATAMAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="ptog-latam-asc3" onchange="saveNow('acceptLATAMAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="ptog-latam-immo1" onchange="saveNow('acceptLATAMImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="ptog-latam-immo2" onchange="saveNow('acceptLATAMImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="ptog-latam-immo3" onchange="saveNow('acceptLATAMImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="ptog-latam-radiant" onchange="saveNow('acceptLATAMRadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="duo-section" id="pricing-latam-duo-sec">
+                  <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="ptog-latam-asc1duo" onchange="saveNow('acceptLATAMAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="ptog-latam-asc2duo" onchange="saveNow('acceptLATAMAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="ptog-latam-asc3duo" onchange="saveNow('acceptLATAMAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="ptog-latam-immo1duo" onchange="saveNow('acceptLATAMImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="ptog-latam-immo2duo" onchange="saveNow('acceptLATAMImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="ptog-latam-immo3duo" onchange="saveNow('acceptLATAMImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="ptog-latam-radiantduo" onchange="saveNow('acceptLATAMRadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--green);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Solo $/100RR + Delivery hrs</div>
+              <div class="tier-grid" id="tier-solo-LATAM"></div>
+              <hr class="divider">
+              <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Duo $/100RR</div>
+              <div class="tier-grid" id="tier-duo-LATAM"></div>
+              <button class="btn btn-full" style="margin-top:14px;background:linear-gradient(135deg,var(--green),#00a84e);color:#000;font-weight:700;" onclick="savePricingRegion('LATAM')">💾 Save LATAM Prices</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AP PRICING TAB -->
+    <div id="tab-pricing-ap" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🌏</span><span class="card-title" style="color:var(--purple)">AP PRICING</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept AP</span><label class="switch"><input type="checkbox" id="ptog-ap" onchange="saveNow('acceptAP',this.checked);syncLock(this);syncCard('pricing-ap')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div>
+              <div class="tog-list" id="pricing-togs-ap">
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;text-transform:uppercase;">Order Settings</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="ptog-ap-duo" onchange="saveNow('acceptAPDuo',this.checked);syncLock(this);syncDuoSection('pricing-ap')"><div class="slider"></div></label></div>
+                <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 4px;text-transform:uppercase;">Solo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="ptog-ap-asc1" onchange="saveNow('acceptAPAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="ptog-ap-asc2" onchange="saveNow('acceptAPAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="ptog-ap-asc3" onchange="saveNow('acceptAPAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="ptog-ap-immo1" onchange="saveNow('acceptAPImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="ptog-ap-immo2" onchange="saveNow('acceptAPImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="ptog-ap-immo3" onchange="saveNow('acceptAPImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="ptog-ap-radiant" onchange="saveNow('acceptAPRadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="duo-section" id="pricing-ap-duo-sec">
+                  <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="ptog-ap-asc1duo" onchange="saveNow('acceptAPAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="ptog-ap-asc2duo" onchange="saveNow('acceptAPAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="ptog-ap-asc3duo" onchange="saveNow('acceptAPAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="ptog-ap-immo1duo" onchange="saveNow('acceptAPImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="ptog-ap-immo2duo" onchange="saveNow('acceptAPImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="ptog-ap-immo3duo" onchange="saveNow('acceptAPImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                  <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="ptog-ap-radiantduo" onchange="saveNow('acceptAPRadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Solo $/100RR + Delivery hrs</div>
+              <div class="tier-grid" id="tier-solo-AP"></div>
+              <hr class="divider">
+              <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;text-transform:uppercase;">Duo $/100RR</div>
+              <div class="tier-grid" id="tier-duo-AP"></div>
+              <button class="btn btn-full" style="margin-top:14px;background:linear-gradient(135deg,var(--purple),#7b2fbe);color:#fff;font-weight:700;" onclick="savePricingRegion('AP')">💾 Save AP Prices</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOM RULES TAB -->
+    <div id="tab-custom" class="tab-panel active">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Custom Price Rules</span><span id="rules-count" style="font-size:10px;color:var(--muted2);margin-left:8px;font-family:'JetBrains Mono',monospace;"></span>
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+            <span style="font-size:9px;color:var(--muted2);font-family:'JetBrains Mono',monospace;">Checked first — override tier pricing</span>
+            <button class="btn btn-danger btn-sm" onclick="if(confirm('Remove ALL custom rules?')){customRules=[];state.customRules=[];renderRules();fetch('/api/pricing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customRules:[]})});}">Clear All</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 80px 1fr 1fr auto;gap:10px;margin-bottom:14px;align-items:end">
+            <div class="field" style="margin:0"><label>FROM RANK</label><select class="input" id="rule-from"><option value="">Select...</option></select></div>
+            <div class="field" style="margin:0"><label>TO RANK</label><select class="input" id="rule-to"><option value="">Select...</option></select></div>
+            <div class="field" style="margin:0"><label>SERVER</label><select class="input" id="rule-server"><option value="">Any</option><option value="EU">EU</option><option value="NA">NA</option><option value="LATAM">LATAM</option><option value="AP">AP</option></select></div>
+            <div class="field" style="margin:0"><label>PRICE ($)</label><input class="input" type="number" id="rule-price" placeholder="Auto" min="0" step="0.5"></div>
+            <div class="field" style="margin:0"><label>DELIVERY</label><select class="input" id="rule-delivery"><option value="">Auto</option><option value="Hour8">8h</option><option value="Hour12">12h</option><option value="Day1">1 Day</option><option value="Day2">2 Days</option><option value="Day3">3 Days</option><option value="Day7">7 Days</option><option value="Day14">14 Days</option></select></div>
+            <button class="btn btn-primary" onclick="addRule()" id="add-rule-btn">+ Add</button>
+          </div>
+          <input class="input" type="text" placeholder="🔍 Search rules..." oninput="filterRules(this.value)" style="margin-bottom:12px">
+          <div style="overflow:auto;max-height:400px;"><table class="rules-table"><thead><tr><th>From</th><th>To</th><th>Server</th><th>Price</th><th>Delivery</th><th></th></tr></thead><tbody id="rules-body"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NET WINS -->
+<div id="page-netwin" class="page">
+  <div class="page-header"><div><div class="page-eyebrow">Configuration</div><div class="page-title">Net Wins Pricing</div><div class="page-subtitle">Per-game pricing by rank and region — same Asc/Immortal toggles as Pricing</div></div></div>
+  <div class="page-content">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchPricingTab('nw-eu',this)">🇪🇺 EU</button>
+      <button class="tab-btn" onclick="switchPricingTab('nw-na',this)">🇺🇸 NA</button>
+      <button class="tab-btn" onclick="switchPricingTab('nw-latam',this)">🌎 LATAM</button>
+      <button class="tab-btn" onclick="switchPricingTab('nw-ap',this)">🌏 AP</button>
+    </div>
+
+    <!-- NW EU -->
+    <div id="tab-nw-eu" class="tab-panel active">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🇪🇺</span><span class="card-title" style="color:var(--blue)">EU NET WINS</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept NW EU</span><label class="switch"><input type="checkbox" id="nwtog-eu-nw" onchange="saveNow('acceptNetWinsEU',this.checked);syncLock(this);syncCard('nw-eu')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div class="tog-list" id="nw-togs-eu">
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-duo" onchange="saveNow('acceptEUDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Ascendant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="nwtog-eu-asc1" onchange="saveNow('acceptEUAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="nwtog-eu-asc2" onchange="saveNow('acceptEUAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="nwtog-eu-asc3" onchange="saveNow('acceptEUAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Immortal / Radiant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="nwtog-eu-immo1" onchange="saveNow('acceptEUImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="nwtog-eu-immo2" onchange="saveNow('acceptEUImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="nwtog-eu-immo3" onchange="saveNow('acceptEUImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="nwtog-eu-radiant" onchange="saveNow('acceptEURadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="duo-section" id="nw-eu-duo-sec">
+                <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-asc1duo" onchange="saveNow('acceptEUAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-asc2duo" onchange="saveNow('acceptEUAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-asc3duo" onchange="saveNow('acceptEUAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-immo1duo" onchange="saveNow('acceptEUImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-immo2duo" onchange="saveNow('acceptEUImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-immo3duo" onchange="saveNow('acceptEUImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="nwtog-eu-radiantduo" onchange="saveNow('acceptEURadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              </div>
+            </div>
+            <div><div class="tier-grid" id="nw-grid-eu"></div><button class="btn btn-blue btn-full" style="margin-top:14px" onclick="saveNetWinRegion('EU')">💾 Save EU Net Win Prices</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NW NA -->
+    <div id="tab-nw-na" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🇺🇸</span><span class="card-title" style="color:var(--gold)">NA NET WINS</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept NW NA</span><label class="switch"><input type="checkbox" id="nwtog-na-nw" onchange="saveNow('acceptNetWinsNA',this.checked);syncLock(this);syncCard('nw-na')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div class="tog-list" id="nw-togs-na">
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="nwtog-na-duo" onchange="saveNow('acceptNADuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Ascendant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="nwtog-na-asc1" onchange="saveNow('acceptNAAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="nwtog-na-asc2" onchange="saveNow('acceptNAAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="nwtog-na-asc3" onchange="saveNow('acceptNAAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Immortal / Radiant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="nwtog-na-immo1" onchange="saveNow('acceptNAImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="nwtog-na-immo2" onchange="saveNow('acceptNAImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="nwtog-na-immo3" onchange="saveNow('acceptNAImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="nwtog-na-radiant" onchange="saveNow('acceptNARadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="duo-section" id="nw-na-duo-sec">
+                <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="nwtog-na-asc1duo" onchange="saveNow('acceptNAAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="nwtog-na-asc2duo" onchange="saveNow('acceptNAAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="nwtog-na-asc3duo" onchange="saveNow('acceptNAAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="nwtog-na-immo1duo" onchange="saveNow('acceptNAImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="nwtog-na-immo2duo" onchange="saveNow('acceptNAImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="nwtog-na-immo3duo" onchange="saveNow('acceptNAImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="nwtog-na-radiantduo" onchange="saveNow('acceptNARadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              </div>
+            </div>
+            <div><div class="tier-grid" id="nw-grid-na"></div><button class="btn btn-primary btn-full" style="margin-top:14px" onclick="saveNetWinRegion('NA')">💾 Save NA Net Win Prices</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NW LATAM -->
+    <div id="tab-nw-latam" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🌎</span><span class="card-title" style="color:var(--green)">LATAM NET WINS</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept NW LATAM</span><label class="switch"><input type="checkbox" id="nwtog-latam-nw" onchange="saveNow('acceptNetWinsLATAM',this.checked);syncLock(this);syncCard('nw-latam')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div class="tog-list" id="nw-togs-latam">
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-duo" onchange="saveNow('acceptLATAMDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Ascendant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="nwtog-latam-asc1" onchange="saveNow('acceptLATAMAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="nwtog-latam-asc2" onchange="saveNow('acceptLATAMAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="nwtog-latam-asc3" onchange="saveNow('acceptLATAMAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Immortal / Radiant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="nwtog-latam-immo1" onchange="saveNow('acceptLATAMImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="nwtog-latam-immo2" onchange="saveNow('acceptLATAMImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="nwtog-latam-immo3" onchange="saveNow('acceptLATAMImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="nwtog-latam-radiant" onchange="saveNow('acceptLATAMRadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="duo-section" id="nw-latam-duo-sec">
+                <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-asc1duo" onchange="saveNow('acceptLATAMAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-asc2duo" onchange="saveNow('acceptLATAMAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-asc3duo" onchange="saveNow('acceptLATAMAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-immo1duo" onchange="saveNow('acceptLATAMImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-immo2duo" onchange="saveNow('acceptLATAMImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-immo3duo" onchange="saveNow('acceptLATAMImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="nwtog-latam-radiantduo" onchange="saveNow('acceptLATAMRadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              </div>
+            </div>
+            <div><div class="tier-grid" id="nw-grid-latam"></div><button class="btn btn-full" style="margin-top:14px;background:linear-gradient(135deg,var(--green),#00a84e);color:#000;font-weight:700;" onclick="saveNetWinRegion('LATAM')">💾 Save LATAM Net Win Prices</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NW AP -->
+    <div id="tab-nw-ap" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><span style="font-size:16px">🌏</span><span class="card-title" style="color:var(--purple)">AP NET WINS</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--muted2)">Accept NW AP</span><label class="switch"><input type="checkbox" id="nwtog-ap-nw" onchange="saveNow('acceptNetWinsAP',this.checked);syncLock(this);syncCard('nw-ap')"><div class="slider"></div></label></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:20px">
+            <div class="tog-list" id="nw-togs-ap">
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">👥 Accept Duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-duo" onchange="saveNow('acceptAPDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Ascendant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant I</div><label class="switch"><input type="checkbox" id="nwtog-ap-asc1" onchange="saveNow('acceptAPAsc1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant II</div><label class="switch"><input type="checkbox" id="nwtog-ap-asc2" onchange="saveNow('acceptAPAsc2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Ascendant III</div><label class="switch"><input type="checkbox" id="nwtog-ap-asc3" onchange="saveNow('acceptAPAsc3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div style="font-size:9px;color:var(--muted2);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:10px 0 6px;text-transform:uppercase;">Immortal / Radiant</div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal I</div><label class="switch"><input type="checkbox" id="nwtog-ap-immo1" onchange="saveNow('acceptAPImmo1',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal II</div><label class="switch"><input type="checkbox" id="nwtog-ap-immo2" onchange="saveNow('acceptAPImmo2',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immortal III</div><label class="switch"><input type="checkbox" id="nwtog-ap-immo3" onchange="saveNow('acceptAPImmo3',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant</div><label class="switch"><input type="checkbox" id="nwtog-ap-radiant" onchange="saveNow('acceptAPRadiant',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              <div class="duo-section" id="nw-ap-duo-sec">
+                <div style="font-size:9px;color:var(--purple);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:6px 0 4px;text-transform:uppercase;">Duo Accepts</div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc I duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-asc1duo" onchange="saveNow('acceptAPAsc1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc II duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-asc2duo" onchange="saveNow('acceptAPAsc2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Asc III duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-asc3duo" onchange="saveNow('acceptAPAsc3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo I duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-immo1duo" onchange="saveNow('acceptAPImmo1Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo II duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-immo2duo" onchange="saveNow('acceptAPImmo2Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Immo III duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-immo3duo" onchange="saveNow('acceptAPImmo3Duo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+                <div class="tog-row lock-aware"><div class="tog-label" style="font-size:11px">Radiant duo</div><label class="switch"><input type="checkbox" id="nwtog-ap-radiantduo" onchange="saveNow('acceptAPRadiantDuo',this.checked);syncLock(this)"><div class="slider"></div></label></div>
+              </div>
+            </div>
+            <div><div class="tier-grid" id="nw-grid-ap"></div><button class="btn btn-full" style="margin-top:14px;background:linear-gradient(135deg,var(--purple),#7b2fbe);color:#fff;font-weight:700;" onclick="saveNetWinRegion('AP')">💾 Save AP Net Win Prices</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="page-settings" class="page">
+  <div class="page-header"><div><div class="page-eyebrow">Configuration</div><div class="page-title">Settings</div><div class="page-subtitle">Bot configuration and message template</div></div></div>
+  <div class="page-content">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><span class="card-title">💾 Backup &amp; Restore</span></div>
+      <div class="card-body">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+          <b>Export</b> all your settings (custom rules, pricing, region toggles, message template, webhooks) to a single <code>.json</code> file.<br>
+          When you install a new bot version, hit <b>Import</b> with that file and everything is back in 1 click.
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary" onclick="exportConfig()">⬇ Export My Config</button>
+          <input type="file" id="cfg-import-file" accept=".json" style="display:none" onchange="importConfig(this.files[0])">
+          <button class="btn btn-ghost" onclick="document.getElementById('cfg-import-file').click()">⬆ Import Config…</button>
+          <span id="cfg-import-status" style="font-size:11px;color:var(--muted2);margin-left:6px"></span>
+        </div>
+      </div>
+    </div>
+    <div class="two-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚙ Bot Settings</span></div>
+      <div class="card-body">
+        <div class="tog-list">
+          <div class="tog-row"><div class="tog-label">Auto-Send Offers</div><label class="switch"><input type="checkbox" id="stog-offer" onchange="save('autoOffer',this.checked)"><div class="slider"></div></label></div>
+          <div class="tog-row"><div class="tog-label">Auto-Send Messages</div><label class="switch"><input type="checkbox" id="stog-msg" onchange="save('autoMessage',this.checked)"><div class="slider"></div></label></div>
+          <div style="font-size:9px;color:var(--muted2);margin-top:8px;font-family:'JetBrains Mono',monospace;">Region, Net Wins, Duo, Asc, Immortal → in Pricing tabs</div>
+        </div>
+        <hr class="divider">
+        <div class="inline-fields">
+          <div class="field"><label>Cooldown (sec)</label><input class="input" type="number" id="scooldown" value="0" min="0" max="300" onchange="save('cooldownSeconds',parseInt(this.value))"></div>
+          <div class="field"><label>Poll Interval</label><input class="input" type="number" id="spollint" value="1.5" disabled style="opacity:0.4"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">💬 Message Template</span></div>
+      <div class="card-body">
+        <div class="field"><label>Variables: {username} {currentRank} {desiredRank} {server}</label><textarea class="input" id="msg-tpl" rows="4" placeholder="Hey {username}! I can boost you..."></textarea></div>
+        <button class="btn btn-primary" onclick="saveMsg()">Save Template</button>
+        <hr class="divider">
+        <div class="field">
+          <label>🖼️ Image URL (optional) — sent as a SECOND chat bubble after the text</label>
+          <input class="input" type="text" id="msg-img-url" placeholder="https://i.imgur.com/yourpic.jpg (leave blank for no image)">
+          <div style="font-size:11px;color:var(--muted2);margin-top:6px;font-family:'JetBrains Mono',monospace">
+            Recommended: upload to Imgur, copy direct image link (i.imgur.com/...). Discord CDN URLs expire after ~24h — avoid them.
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveImgUrl()">💾 Save Image URL</button>
+        <hr class="divider">
+        <div class="field"><label>Test — Boosting Request ID</label><input class="input" type="text" id="test-req-id" placeholder="Paste request UUID..."></div>
+        <div class="field"><label>Custom Message (optional)</label><input class="input" type="text" id="test-msg-text" placeholder="Leave blank to use template"></div>
+        <button class="btn btn-secondary" onclick="testMsg()">Send Test Message</button>
+        <div id="test-msg-result" style="margin-top:10px;font-size:11px;color:var(--green);font-family:'JetBrains Mono',monospace;"></div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- Discord Notifications Card -->
+  <div class="page-content" style="margin-top:0;padding-top:0;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">🔔 Discord Notifications</span></div>
+      <div class="card-body">
+        <div style="margin-bottom:16px;">
+          <label style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:2px;display:block;margin-bottom:8px;">DISCORD WEBHOOK URL</label>
+          <div style="display:flex;gap:8px;">
+            <input id="discord-webhook-input" type="text" placeholder="https://discord.com/api/webhooks/..." class="input" style="flex:1;font-size:12px;" />
+            <button class="btn btn-secondary" onclick="testDiscord()">🧪 Test</button>
+            <button class="btn btn-primary" onclick="saveDiscord()">💾 Save</button>
+          </div>
+          <div style="font-size:10px;color:var(--muted2);margin-top:8px;font-family:'JetBrains Mono',monospace;">
+            Discord → Your Server → Settings → Integrations → Webhooks → New Webhook → Copy URL
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:10px;color:var(--gold);background:rgba(240,180,41,0.1);border:1px solid rgba(240,180,41,0.2);padding:4px 12px;border-radius:20px;font-family:'JetBrains Mono',monospace;">💰 Pings when buyer accepts your offer</span>
+            <span style="font-size:10px;color:var(--blue);background:rgba(76,201,240,0.1);border:1px solid rgba(76,201,240,0.2);padding:4px 12px;border-radius:20px;font-family:'JetBrains Mono',monospace;">⚡ Works even when dashboard is closed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telegram Notifications Card -->
+  <div class="page-content" style="margin-top:0;padding-top:0;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">📨 Telegram Notifications</span></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:2px;display:block;margin-bottom:8px;">BOT TOKEN</label>
+            <input id="tg-token-input" type="text" placeholder="123456789:ABC-DEF1234ghIkl..." class="input" style="font-size:12px;" />
+            <div style="font-size:10px;color:var(--muted2);margin-top:6px;font-family:'JetBrains Mono',monospace;">From @BotFather → /newbot → copy token</div>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:2px;display:block;margin-bottom:8px;">CHAT ID(S)</label>
+            <input id="tg-chatid-input" type="text" placeholder="123456789  or  123,456,789  (comma-separated)" class="input" style="font-size:12px;" />
+            <div style="font-size:10px;color:var(--muted2);margin-top:6px;font-family:'JetBrains Mono',monospace;">DM @userinfobot → copy your chat ID. Multiple = comma-separated.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          <button class="btn btn-secondary" onclick="testTelegram()">🧪 Test</button>
+          <button class="btn btn-primary" onclick="saveTelegram()">💾 Save</button>
+        </div>
+
+        <hr class="divider">
+        <div style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:2px;margin:6px 0 10px;">EVENTS — WHAT TO NOTIFY</div>
+        <div class="tog-list" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">
+          <div class="tog-row"><div class="tog-label">💰 Paid order (buyer accepts)</div><label class="switch"><input type="checkbox" id="tg-on-paid" onchange="saveNow('telegramOnPaidOrder',this.checked)"><div class="slider"></div></label></div>
+          <div class="tog-row"><div class="tog-label">✅ Offer sent</div><label class="switch"><input type="checkbox" id="tg-on-offer" onchange="saveNow('telegramOnOfferSent',this.checked)"><div class="slider"></div></label></div>
+          <div class="tog-row"><div class="tog-label">🔴 Immortal/Radiant request</div><label class="switch"><input type="checkbox" id="tg-on-immo" onchange="saveNow('telegramOnImmortal',this.checked)"><div class="slider"></div></label></div>
+          <div class="tog-row"><div class="tog-label">❌ Errors</div><label class="switch"><input type="checkbox" id="tg-on-err" onchange="saveNow('telegramOnError',this.checked)"><div class="slider"></div></label></div>
+        </div>
+
+        <hr class="divider">
+        <div style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:2px;margin:6px 0 10px;">SERVERS — ONLY NOTIFY FOR THESE REGIONS</div>
+        <div class="tog-list" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0 18px;">
+          <div class="tog-row"><div class="tog-label" style="font-size:11px">🇪🇺 EU</div><label class="switch"><input type="checkbox" id="tg-srv-eu" onchange="saveNow('telegramServerEU',this.checked)"><div class="slider"></div></label></div>
+          <div class="tog-row"><div class="tog-label" style="font-size:11px">🇺🇸 NA</div><label class="switch"><input type="checkbox" id="tg-srv-na" onchange="saveNow('telegramServerNA',this.checked)"><div class="slider"></div></label></div>
+          <div class="tog-row"><div class="tog-label" style="font-size:11px">🌎 LATAM</div><label class="switch"><input type="checkbox" id="tg-srv-latam" onchange="saveNow('telegramServerLATAM',this.checked)"><div class="slider"></div></label></div>
+          <div class="tog-row"><div class="tog-label" style="font-size:11px">🌏 AP</div><label class="switch"><input type="checkbox" id="tg-srv-ap" onchange="saveNow('telegramServerAP',this.checked)"><div class="slider"></div></label></div>
+        </div>
+
+        <hr class="divider">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <label style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:2px;">MIN DESTINATION RANK</label>
+          <select class="input" id="tg-min-rank" style="max-width:200px;font-size:12px;" onchange="saveNow('telegramMinRank',this.value)">
+            <option value="">Any rank</option>
+            <option value="Iron I">Iron I+</option>
+            <option value="Bronze I">Bronze I+</option>
+            <option value="Silver I">Silver I+</option>
+            <option value="Gold I">Gold I+</option>
+            <option value="Platinum I">Platinum I+</option>
+            <option value="Diamond I">Diamond I+</option>
+            <option value="Ascendant I">Ascendant I+</option>
+            <option value="Immortal I">Immortal I+</option>
+            <option value="Immortal III">Immortal III+</option>
+            <option value="Radiant">Radiant only</option>
+          </select>
+          <span style="font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;">Filters paid/offer notifications. Immortal-request alerts always fire.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- STATS PAGE -->
+<div id="page-stats" class="page">
+  <div class="page-header">
+    <div><div class="page-eyebrow">Analytics</div><div class="page-title">Statistics</div><div class="page-subtitle">Revenue tracking and performance</div></div>
+    <button class="btn btn-secondary" onclick="loadStats()">🔄 Refresh</button>
+  </div>
+  <div class="page-content">
+    <!-- Revenue cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" id="stats-rev-cards">
+      <div class="stat-card gold"><div class="stat-label">Today</div><div class="stat-val gold" id="rev-today">$0</div><div class="stat-sub" id="rev-today-count">0 orders</div><div class="stat-icon">📅</div></div>
+      <div class="stat-card green"><div class="stat-label">This Week</div><div class="stat-val green" id="rev-week">$0</div><div class="stat-sub" id="rev-week-count">0 orders</div><div class="stat-icon">📆</div></div>
+      <div class="stat-card blue"><div class="stat-label">This Month</div><div class="stat-val blue" id="rev-month">$0</div><div class="stat-sub" id="rev-month-count">0 orders</div><div class="stat-icon">🗓</div></div>
+      <div class="stat-card purple"><div class="stat-label">All Time</div><div class="stat-val purple" id="rev-total">$0</div><div class="stat-sub" id="rev-total-count">0 orders</div><div class="stat-icon">💎</div></div>
+    </div>
+    <!-- Won orders (buyer accepted) -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🏆 Won Orders — Buyers Accepted My Offer</span>
+        <span id="won-count-label" style="font-size:10px;color:var(--muted2);margin-left:8px;font-family:'JetBrains Mono',monospace;"></span>
+      </div>
+      <div class="card-body" style="padding:0;overflow:auto;">
+        <table class="act-table">
+          <thead><tr><th>Date</th><th>Buyer</th><th>Game</th><th>Price</th><th>Status</th></tr></thead>
+          <tbody id="won-orders-body"><tr><td colspan="5" class="empty-row">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Daily breakdown -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header"><span class="card-title">📈 Daily Revenue (Last 7 Days)</span></div>
+      <div class="card-body">
+        <div id="daily-chart" style="display:flex;align-items:flex-end;gap:8px;height:120px;padding:0 4px;"></div>
+        <div id="daily-labels" style="display:flex;gap:8px;margin-top:6px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SOLD ORDERS PAGE -->
+<div id="page-sold" class="page">
+  <div class="page-header">
+    <div><div class="page-eyebrow">Orders</div><div class="page-title">Sold Orders</div><div class="page-subtitle">Orders buyers accepted & paid — pending your delivery</div></div>
+    <button class="btn btn-secondary" onclick="refreshSoldOrders()">🔄 Refresh</button>
+  </div>
+  <div class="page-content">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">💰 All Sold Orders</span>
+        <span id="sold-page-count" style="font-size:10px;color:var(--muted2);margin-left:8px;font-family:'JetBrains Mono',monospace;"></span>
+        <span id="sold-last-update" style="font-size:9px;color:var(--muted);margin-left:auto;font-family:'JetBrains Mono',monospace;"></span>
+      </div>
+      <div class="card-body" style="padding:0;overflow:auto;">
+        <table class="act-table">
+          <thead><tr><th>Date</th><th>Game</th><th>Buyer</th><th>Price</th><th>Status</th><th>Details</th></tr></thead>
+          <tbody id="sold-orders-body"><tr><td colspan="6" class="empty-row">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// PARTICLES
+(function(){
+  var c=document.getElementById('particles-canvas'),ctx=c.getContext('2d');
+  var W=window.innerWidth,H=window.innerHeight;
+  c.width=W;c.height=H;
+  window.addEventListener('resize',function(){W=window.innerWidth;H=window.innerHeight;c.width=W;c.height=H;});
+  var pts=[];
+  for(var i=0;i<55;i++) pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.2+.4,a:Math.random()*.35+.04,col:Math.random()>.7?'240,180,41':Math.random()>.5?'76,201,240':'255,255,255'});
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba('+p.col+','+p.a+')';ctx.fill();
+    });
+    for(var i=0;i<pts.length;i++){for(var j=i+1;j<pts.length;j++){
+      var dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<110){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle='rgba(255,255,255,'+(0.025*(1-d/110))+')';ctx.lineWidth=.4;ctx.stroke();}
+    }}
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// 3D TILT
+document.addEventListener('mousemove',function(e){
+  document.querySelectorAll('.stat-card').forEach(function(card){
+    var r=card.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    var dx=(e.clientX-cx)/r.width,dy=(e.clientY-cy)/r.height,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<1.2) card.style.transform='translateY(-4px) rotateX('+(dy*-7)+'deg) rotateY('+(dx*7)+'deg)';
+    else card.style.transform='';
+  });
+});
+
+// CLOCK
+setInterval(function(){var el=document.getElementById('live-clock');if(el)el.textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
+
+// STATE
+var logs_data=[],logIdx=0,state={},customRules=[],_userInteracting=false,_interactTimer=null;
+
+function nav(page,el){
+  document.querySelectorAll('.nav-item').forEach(function(e){e.classList.remove('active');});
+  document.querySelectorAll('.page').forEach(function(e){e.classList.remove('active');});
+  if(el)el.classList.add('active');
+  document.getElementById('page-'+page).classList.add('active');
+  if(page==='pricing'){renderPricing();}
+  if(page==='sold') refreshSoldOrders();
+  if(page==='stats') loadStats();
+  if(page==='activity')renderActivity();
+  if(page==='netwin'){renderNWPricing();}
+}
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab-btn').forEach(function(e){e.classList.remove('active');});
+  document.querySelectorAll('.tab-panel').forEach(function(e){e.classList.remove('active');});
+  el.classList.add('active');document.getElementById('tab-'+name).classList.add('active');
+}
+
+function toggleBot(){
+  var r=state.botRunning;
+  fetch(r?'/api/bot/stop':'/api/bot/start',{method:'POST'}).then(function(){setTimeout(refresh,400);});
+}
+
+function syncCard(tabId){
+  var tab=document.getElementById('tab-'+tabId);if(!tab)return;
+  var card=tab.querySelector('.card');if(!card)return;
+  var accInp=card.querySelector('.card-header input[type="checkbox"]');if(!accInp)return;
+  if(accInp.checked){card.classList.remove('region-off');card.classList.add('region-on');}
+  else{card.classList.remove('region-on');card.classList.add('region-off');}
+}
+function syncDuoSection(tabId){
+  var tab=document.getElementById('tab-'+tabId);if(!tab)return;
+  var duoInp=tab.querySelector('input[id$="-duo"]');if(!duoInp)return;
+  tab.querySelectorAll('.duo-section').forEach(function(sec){
+    if(duoInp.checked){sec.classList.remove('duo-off');sec.classList.add('duo-on');}
+    else{sec.classList.remove('duo-on');sec.classList.add('duo-off');}
+  });
+}
+function syncAllCards(){
+  ['pricing-eu','pricing-na','pricing-latam','pricing-ap','nw-eu','nw-na','nw-latam','nw-ap'].forEach(function(tid){syncCard(tid);syncDuoSection(tid);});
+}
+
+function syncLock(inputEl){
+  var row=inputEl.closest('.tog-row');
+  if(!row||!row.classList.contains('lock-aware'))return;
+  var label=row.querySelector('.tog-label');
+  var badge=row.querySelector('.tok-badge');
+  if(!badge){badge=document.createElement('span');badge.className='tok-badge';label.appendChild(badge);}
+  if(inputEl.checked){
+    row.classList.remove('is-locked');row.classList.add('is-unlocked');
+    badge.className='tok-badge tok-badge-on';badge.textContent='ON';
+  } else {
+    row.classList.add('is-locked');row.classList.remove('is-unlocked');
+    badge.className='tok-badge tok-badge-locked';badge.textContent='🔒 LOCKED';
+  }
+}
+function syncAllLocks(){
+  document.querySelectorAll('.tog-row.lock-aware input[type="checkbox"]').forEach(function(inp){syncLock(inp);});
+  syncAllCards();
+}
+
+function saveNow(key,val){
+  _userInteracting=true;clearTimeout(_interactTimer);_interactTimer=setTimeout(function(){_userInteracting=false;},3000);
+  var b={};b[key]=val;fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+}
+function save(key,val){
+  saveNow(key,val);
+  // Instantly sync paired toggles so both dashboard + settings stay in sync
+  var pairs={
+    'autoOffer':['tog-offer','stog-offer'],'autoMessage':['tog-msg','stog-msg']};
+  if(pairs[key]) pairs[key].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=val;});
+}
+function saveMsg(){var t=document.getElementById('msg-tpl').value.trim();if(t)fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messageTemplate:t})});}
+function saveImgUrl(){
+  var el=document.getElementById('msg-img-url');
+  var u=(el.value||'').trim();
+  if(u && !/^https:\/\//i.test(u)){alert('Image URL must start with https://');return;}
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messageImageURL:u})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d && d.ok){
+        el.dataset.edited='';
+        alert(u ? '✅ Image URL saved. The next auto-message will include it.' : '✅ Image cleared — auto-messages will be text-only.');
+      } else {
+        alert('❌ Save failed — try again.');
+      }
+    }).catch(function(){alert('❌ Network error saving image URL.');});
+}
+function saveCookie(){
+  var raw=document.getElementById('cookie-input').value.trim();if(!raw)return;
+  fetch('/api/cookie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cookieString:raw})}).then(function(r){return r.json();}).then(function(d){
+    var el=document.getElementById('cookie-status');el.textContent=d.ok?'✅ Saved!':'❌ Failed';el.style.color=d.ok?'var(--green)':'var(--red)';setTimeout(refresh,500);
+  });
+}
+function clearActivity(){fetch('/api/activity/clear',{method:'DELETE'}).then(function(){state.activity=[];renderActivity();});}
+
+function animNum(el,newVal,prefix){
+  var cur=parseFloat(el.textContent.replace(/[^0-9.]/g,''))||0;
+  if(cur===newVal)return;
+  var steps=10,step=0,diff=newVal-cur;
+  var t=setInterval(function(){step++;var v=cur+diff*(step/steps);el.textContent=(prefix||'')+v.toFixed(prefix==='$'?2:0);if(step>=steps){el.textContent=(prefix||'')+newVal.toFixed(prefix==='$'?2:0);clearInterval(t);}},18);
+}
+
+function _esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+// Hide most of an email so screenshots don't leak the account: keep first+last char of the local part and the domain.
+function _maskEmail(s){
+  s=String(s||'');
+  var at=s.indexOf('@'); if(at<2) return s ? '••••••' : '';
+  var local=s.slice(0,at), dom=s.slice(at);
+  var first=local.charAt(0), last=local.charAt(local.length-1);
+  var dots=Array(Math.max(3,Math.min(local.length-2,8))+1).join('•');
+  return _esc(first+dots+last+dom);
+}
+function typeBadge(type){
+  var m={'Offer Sent':'badge-offer','auto_message':'badge-msg','Rejected':'badge-rejected','Error':'badge-error','Immortal':'badge-immortal','New':'badge-new','Seen':'badge-seen','Sold Order':'badge-sold'};
+  return '<span class="badge '+(m[type]||'badge-seen')+'">'+_esc(type)+'</span>';
+}
+
+function renderActivity(){
+  var acts=state.activity||[];var filter=document.getElementById('type-filter').value;
+  if(filter)acts=acts.filter(function(a){return a.type===filter;});
+  var tbody=document.getElementById('act-body');
+  if(!acts.length){tbody.innerHTML='<tr><td colspan="7" class="empty-row">No activity yet</td></tr>';return;}
+  tbody.innerHTML=acts.map(function(a){
+    var boost=a.boost&&a.boost!=='?'?_esc(a.boost).replace('→','<span style="color:var(--muted)"> → </span>'):'<span style="color:var(--muted)">—</span>';
+    var price=a.price?'<span style="color:var(--green);font-family:JetBrains Mono,monospace;font-weight:600">$'+Number(a.price).toFixed(2)+'</span>':'<span style="color:var(--muted)">—</span>';
+    return '<tr><td style="color:var(--muted);font-family:JetBrains Mono,monospace;white-space:nowrap;font-size:10px">'+_esc(a.time)+'</td><td style="color:var(--blue);font-size:10px">'+_maskEmail(a.account)+'</td><td>'+typeBadge(a.type)+'</td><td style="color:var(--text)">'+_esc(a.region)+'</td><td>'+boost+'</td><td>'+price+'</td><td style="color:var(--muted2);font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(a.details)+'</td></tr>';
+  }).join('');
+}
+
+var TIER_COLORS={iron:'#a0b4c8',bronze:'#cd7f32',silver:'#c0c0c0',gold:'#ffd700',platinum:'#00d4aa',diamond:'#00bfff',ascendant:'#ff6b35',immortal:'#ff4444',radiant:'#ff0080'};
+
+function switchPricingTab(name, el) {
+  var bar = el.closest('.tab-bar');
+  bar.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  var page = el.closest('.page-content');
+  page.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+  var panel = document.getElementById('tab-'+name);
+  if(panel) panel.classList.add('active');
+  if(name==='custom'){populateRankSelects();renderRules();}
+}
+
+function renderPricing(){
+  var tiers=['iron','bronze','silver','gold','platinum','diamond','ascendant']; // immortal handled by Immortal Rules section
+  var regions=[
+    {key:'EU',   soloK:'tierPricesEU',   duoK:'tierPricesDuoEU'},
+    {key:'NA',   soloK:'tierPricesNA',   duoK:'tierPricesDuoNA'},
+    {key:'LATAM',soloK:'tierPricesLATAM',duoK:'tierPricesDuoLATAM'},
+    {key:'AP',   soloK:'tierPricesAP',   duoK:'tierPricesDuoAP'},
+  ];
+  regions.forEach(function(r){
+    var soloData=state[r.soloK]||{},duoData=state[r.duoK]||{},hours=state.tierHours||{};
+
+    // Solo grid
+    var soloGrid=document.getElementById('tier-solo-'+r.key);
+    if(soloGrid && soloGrid.children.length===0){
+      soloGrid.innerHTML=tiers.map(function(t){
+        var p=soloData[t]||0,h=hours[t]||0,im=(t==='immortal'),color=TIER_COLORS[t]||'#fff';
+        return '<div class="tier-card"><div class="tier-name" style="color:'+color+'">'+t.toUpperCase()+(im?' <span style="background:var(--red);color:#fff;font-size:8px;padding:1px 4px;border-radius:3px">MANUAL</span>':'')+'</div>'
+          +'<div class="tier-field"><label>$/step</label><input class="input" type="number" data-tier="'+t+'" data-region="'+r.key+'" data-field="solo-price" value="'+p+'" min="0" step="0.5" style="padding:6px 8px;" '+(im?'disabled style="opacity:.4"':'')+'></div>'
+          +'<div class="tier-field"><label>hrs/step</label><input class="input" type="number" data-tier="'+t+'" data-region="'+r.key+'" data-field="hours" value="'+h+'" min="0" step="0.5" style="padding:6px 8px;" '+(im?'disabled style="opacity:.4"':'')+'></div></div>';
+      }).join('');
+    } else if(soloGrid){
+      tiers.forEach(function(t){
+        var sp=soloGrid.querySelector('[data-tier="'+t+'"][data-region="'+r.key+'"][data-field="solo-price"]');
+        var sh=soloGrid.querySelector('[data-tier="'+t+'"][data-region="'+r.key+'"][data-field="hours"]');
+        if(sp && soloData[t]!==undefined) sp.value=soloData[t];
+        if(sh && hours[t]!==undefined) sh.value=hours[t];
+      });
+    }
+
+    // Duo grid (hours mirror Solo — TIER_HOURS is shared across modes server-side)
+    var duoGrid=document.getElementById('tier-duo-'+r.key);
+    if(duoGrid && duoGrid.children.length===0){
+      duoGrid.innerHTML=tiers.map(function(t){
+        var p=duoData[t]||0,h=hours[t]||0,im=(t==='immortal'),color=TIER_COLORS[t]||'#fff';
+        return '<div class="tier-card"><div class="tier-name" style="color:'+color+'">'+t.toUpperCase()+(im?' <span style="background:var(--red);color:#fff;font-size:8px;padding:1px 4px;border-radius:3px">MANUAL</span>':'')+'</div>'
+          +'<div class="tier-field"><label>$/step (duo)</label><input class="input" type="number" data-tier="'+t+'" data-region="'+r.key+'" data-field="duo-price" value="'+p+'" min="0" step="0.5" style="padding:6px 8px;" '+(im?'disabled style="opacity:.4"':'')+'></div>'
+          +'<div class="tier-field"><label>hrs/step</label><input class="input" type="number" data-tier="'+t+'" data-region="'+r.key+'" data-field="hours-duo" value="'+h+'" min="0" step="0.5" style="padding:6px 8px;" '+(im?'disabled style="opacity:.4"':'')+'></div></div>';
+      }).join('');
+    } else if(duoGrid){
+      tiers.forEach(function(t){
+        var dp=duoGrid.querySelector('[data-tier="'+t+'"][data-region="'+r.key+'"][data-field="duo-price"]');
+        var dh=duoGrid.querySelector('[data-tier="'+t+'"][data-region="'+r.key+'"][data-field="hours-duo"]');
+        if(dp && duoData[t]!==undefined) dp.value=duoData[t];
+        if(dh && hours[t]!==undefined) dh.value=hours[t];
+      });
+    }
+  });
+  populateRankSelects();renderRules();
+  if(typeof bindVLPricingAutoSave==='function') bindVLPricingAutoSave();
+}
+
+var _rulesFilter='',_editingRuleIndex=-1;
+function filterRules(val){_rulesFilter=val.toLowerCase();renderRules();}
+
+function renderRules(){
+  customRules=state.customRules||[];
+  var tbody=document.getElementById('rules-body');if(!tbody)return;
+  var indices=[];customRules.forEach(function(r,i){if(!_rulesFilter||(r.from+r.to+(r.server||'')).toLowerCase().indexOf(_rulesFilter)!==-1)indices.push(i);});
+  var cnt=document.getElementById('rules-count');if(cnt)cnt.textContent=indices.length+'/'+customRules.length+' rules';
+  if(!indices.length){tbody.innerHTML='<tr><td colspan="6" class="empty-row">No rules found</td></tr>';return;}
+  tbody.innerHTML=indices.map(function(i){
+    var r=customRules[i],sc=r.server==='EU'?'var(--blue)':r.server==='NA'?'var(--gold)':r.server==='LATAM'?'var(--green)':r.server==='AP'?'var(--purple)':'var(--muted2)';
+    return '<tr><td style="color:var(--gold);font-weight:600">'+r.from+'</td><td style="color:var(--text)">'+r.to+'</td><td style="color:'+sc+';font-weight:600">'+(r.server||'Any')+'</td><td style="color:var(--green)">'+(r.price?'$'+r.price:'—')+'</td><td style="color:var(--muted2)">'+(r.delivery_enum||'Auto')+'</td>'
+      +'<td style="display:flex;gap:4px"><button class="rm-btn" style="color:var(--blue);border-color:var(--blue)" onclick="editRule('+i+')">Edit</button><button class="rm-btn" onclick="removeRule('+i+')">Remove</button></td></tr>';
+  }).join('');
+}
+
+function editRule(i){
+  var r=customRules[i];_editingRuleIndex=i;populateRankSelects();
+  setTimeout(function(){
+    function ss(el,val){for(var k=0;k<el.options.length;k++){if(el.options[k].value===val)break;}if(k===el.options.length){var o=document.createElement('option');o.value=val;o.textContent=val;el.appendChild(o);}el.value=val;}
+    ss(document.getElementById('rule-from'),r.from||'');ss(document.getElementById('rule-to'),r.to||'');
+    document.getElementById('rule-server').value=r.server||'';document.getElementById('rule-price').value=r.price||'';document.getElementById('rule-delivery').value=r.delivery_enum||'';
+    var btn=document.getElementById('add-rule-btn');if(btn){btn.textContent='✏ Update';btn.style.background='var(--blue)';btn.style.color='#000';}
+    document.getElementById('rule-from').scrollIntoView({behavior:'smooth',block:'center'});
+  },30);
+}
+
+function addRule(){
+  var from=document.getElementById('rule-from').value,to=document.getElementById('rule-to').value;
+  var server=document.getElementById('rule-server').value||'',price=parseFloat(document.getElementById('rule-price').value)||null;
+  var del=document.getElementById('rule-delivery').value||null;
+  if(!from||!to){alert('Select FROM and TO ranks');return;}
+  var nr={from:from,to:to,server:server,price:price,delivery_enum:del};
+  if(_editingRuleIndex>=0&&_editingRuleIndex<customRules.length){customRules[_editingRuleIndex]=nr;_editingRuleIndex=-1;}else{customRules.push(nr);}
+  state.customRules=customRules;
+  var btn=document.getElementById('add-rule-btn');if(btn){btn.textContent='+ Add';btn.style.background='';btn.style.color='';}
+  document.getElementById('rule-from').value='';document.getElementById('rule-to').value='';document.getElementById('rule-price').value='';
+  renderRules();fetch('/api/pricing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customRules:customRules})});
+}
+
+function removeRule(i){
+  if(_editingRuleIndex===i)_editingRuleIndex=-1;
+  customRules.splice(i,1);state.customRules=customRules;renderRules();
+  fetch('/api/pricing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customRules:customRules})});
+}
+
+function populateRankSelects(){
+  var ALL=['Iron I','Iron II','Iron III','Bronze I','Bronze II','Bronze III','Silver I','Silver II','Silver III','Gold I','Gold II','Gold III','Platinum I','Platinum II','Platinum III','Diamond I','Diamond II','Diamond III','Ascendant I','Ascendant II','Ascendant III','Immortal I','Immortal II','Immortal III','Radiant'];
+  ['rule-from','rule-to'].forEach(function(id){var s=document.getElementById(id);if(!s)return;s.innerHTML='<option value="">Select...</option>'+ALL.map(function(r){return '<option value="'+r+'">'+r+'</option>';}).join('');});
+}
+
+var NW_TIERS=[
+  {key:'iron',name:'IRON',color:'#a0b4c8',dp:2,dh:1},{key:'bronze',name:'BRONZE',color:'#cd7f32',dp:3,dh:1},
+  {key:'silver',name:'SILVER',color:'#c0c0c0',dp:3,dh:1},{key:'gold',name:'GOLD',color:'#ffd700',dp:4,dh:1.5},
+  {key:'platinum',name:'PLATINUM',color:'#00d4aa',dp:5,dh:2},{key:'diamond',name:'DIAMOND',color:'#00bfff',dp:6,dh:2},
+  {key:'ascendant',name:'ASCENDANT',color:'#ff6b35',dp:8,dh:3},
+  {key:'immortal_1',name:'IMMORTAL I',color:'#ff4444',dp:0,dh:0,req:true},
+  {key:'immortal_2',name:'IMMORTAL II',color:'#ff4444',dp:0,dh:0,req:true},
+  {key:'immortal_3',name:'IMMORTAL III',color:'#ff4444',dp:0,dh:0,req:true},
+  {key:'radiant',name:'RADIANT',color:'#ff0080',dp:0,dh:0,req:true},
+];
+var NW_REGIONS_MAP={EU:'netwinPricesEU',NA:'netwinPricesNA',LATAM:'netwinPricesLATAM',AP:'netwinPricesAP'};
+
+var NW_DUO_MAP={EU:'netwinPricesDuoEU',NA:'netwinPricesDuoNA',LATAM:'netwinPricesDuoLATAM',AP:'netwinPricesDuoAP'};
+
+function renderNWPricing(){
+  Object.keys(NW_REGIONS_MAP).forEach(function(region){
+    var pk=NW_REGIONS_MAP[region],dkp=NW_DUO_MAP[region];
+    var prices=state[pk]||{},duoPrices=state[dkp]||{},hours=state.netwinHours||{};
+    var gridId='nw-grid-'+region.toLowerCase();
+    var grid=document.getElementById(gridId);if(!grid)return;
+    if(grid.children.length===0){
+      grid.innerHTML=NW_TIERS.map(function(t){
+        var pv=prices[t.key]!==undefined?prices[t.key]:t.dp;
+        var dpv=duoPrices[t.key]!==undefined?duoPrices[t.key]:Math.round(t.dp*0.75*100)/100;
+        var hv=hours[t.key]!==undefined?hours[t.key]:t.dh;
+        return '<div class="tier-card"><div class="tier-name" style="color:'+t.color+'">'+t.name+'</div>'
+          +'<div class="tier-field"><label>$/GAME SOLO</label><input class="input" type="number" data-nwtier="'+t.key+'" data-nwfield="price" data-nwregion="'+region+'" value="'+pv+'" min="0" step="0.5" style="padding:5px 6px;"></div>'
+          +'<div class="tier-field"><label style="color:var(--purple)">$/GAME DUO</label><input class="input" type="number" data-nwtier="'+t.key+'" data-nwfield="duoprice" data-nwregion="'+region+'" value="'+dpv+'" min="0" step="0.5" style="padding:5px 6px;border-color:rgba(168,85,247,0.3);"></div>'
+          +'<div class="tier-field"><label>HRS/GAME</label><input class="input" type="number" data-nwtier="'+t.key+'" data-nwfield="hours" data-nwregion="'+region+'" value="'+hv+'" min="0" step="0.5" style="padding:5px 6px;"></div>'
+          +(t.req?'<div style="font-size:9px;color:var(--gold);margin-top:4px;font-family:JetBrains Mono,monospace">needs toggle</div>':'')+'</div>';
+      }).join('');
+    } else {
+      NW_TIERS.forEach(function(t){
+        var pi=grid.querySelector('[data-nwtier="'+t.key+'"][data-nwregion="'+region+'"][data-nwfield="price"]');
+        var dpi=grid.querySelector('[data-nwtier="'+t.key+'"][data-nwregion="'+region+'"][data-nwfield="duoprice"]');
+        var hi=grid.querySelector('[data-nwtier="'+t.key+'"][data-nwregion="'+region+'"][data-nwfield="hours"]');
+        if(pi&&prices[t.key]!==undefined)pi.value=prices[t.key];
+        if(dpi&&duoPrices[t.key]!==undefined)dpi.value=duoPrices[t.key];
+        if(hi&&hours[t.key]!==undefined)hi.value=hours[t.key];
+      });
+    }
+  });
+}
+
+function saveNetWinRegion(region){
+  var pk=NW_REGIONS_MAP[region],dkp=NW_DUO_MAP[region];
+  if(!state[pk])state[pk]={};if(!state[dkp])state[dkp]={};if(!state.netwinHours)state.netwinHours={};
+  document.querySelectorAll('[data-nwtier][data-nwregion="'+region+'"][data-nwfield="price"]').forEach(function(inp){state[pk][inp.dataset.nwtier]=parseFloat(inp.value)||0;});
+  document.querySelectorAll('[data-nwtier][data-nwregion="'+region+'"][data-nwfield="duoprice"]').forEach(function(inp){state[dkp][inp.dataset.nwtier]=parseFloat(inp.value)||0;});
+  document.querySelectorAll('[data-nwtier][data-nwregion="'+region+'"][data-nwfield="hours"]').forEach(function(inp){state.netwinHours[inp.dataset.nwtier]=parseFloat(inp.value)||0;});
+  var payload={netwinHours:state.netwinHours};payload[pk]=state[pk];payload[dkp]=state[dkp];
+  fetch('/api/pricing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(){
+    var btn=event.target;btn.textContent='✅ Saved!';setTimeout(function(){btn.textContent='💾 Save '+region+' Net Win Prices';},2000);
+  });
+}
+
+function savePricingRegion(region, silent){
+  var soloKey='tierPrices'+region, duoKey='tierPricesDuo'+region;
+  if(!state[soloKey])state[soloKey]={};
+  if(!state[duoKey])state[duoKey]={};
+  if(!state.tierHours)state.tierHours={};
+  document.querySelectorAll('[data-tier][data-region="'+region+'"][data-field="solo-price"]').forEach(function(inp){state[soloKey][inp.dataset.tier]=parseFloat(inp.value)||0;});
+  document.querySelectorAll('[data-tier][data-region="'+region+'"][data-field="duo-price"]').forEach(function(inp){state[duoKey][inp.dataset.tier]=parseFloat(inp.value)||0;});
+  document.querySelectorAll('[data-tier][data-region="'+region+'"][data-field="hours"], [data-tier][data-region="'+region+'"][data-field="hours-duo"]').forEach(function(inp){state.tierHours[inp.dataset.tier]=parseFloat(inp.value)||0;});
+  var payload={tierHours:state.tierHours,customRules:customRules};
+  payload[soloKey]=state[soloKey];
+  payload[duoKey]=state[duoKey];
+  return fetch('/api/pricing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(){
+    if(silent) return;
+    if(typeof event!=='undefined' && event && event.target){
+      var btn=event.target;btn.textContent='✅ Saved!';setTimeout(function(){btn.textContent='💾 Save '+region+' Prices';},2000);
+    }
+  });
+}
+
+// Auto-save pricing on input change — fixes "I forgot to click Save" bug.
+// 600ms debounce per region.
+var _vlPricingSaveTimers = {};
+function _vlSchedulePricingSave(region){
+  clearTimeout(_vlPricingSaveTimers[region]);
+  // Show a tiny saving indicator next to the region's save button if present
+  var btn = document.querySelector('[onclick*="savePricingRegion(\''+region+'\')"]');
+  if(btn) btn.textContent='saving…';
+  _vlPricingSaveTimers[region] = setTimeout(function(){
+    savePricingRegion(region, true).then(function(){
+      if(btn){ btn.textContent='auto-saved ✓'; setTimeout(function(){ btn.textContent='💾 Save '+region+' Prices'; }, 1500); }
+    });
+  }, 600);
+}
+function bindVLPricingAutoSave(){
+  document.querySelectorAll('[data-tier][data-region]').forEach(function(inp){
+    if(inp.dataset.autosaveBound) return;
+    inp.dataset.autosaveBound = '1';
+    var region = inp.dataset.region;
+    inp.addEventListener('input', function(){ _vlSchedulePricingSave(region); });
+    inp.addEventListener('change', function(){ _vlSchedulePricingSave(region); });
+  });
+}
+
+function checkTalkSession(){
+  fetch('/api/talkjs-session').then(function(r){return r.json();}).then(function(d){
+    var box=document.getElementById('talkjs-status-box');if(!box)return;
+    if(d.hasSession){box.style.color='var(--green)';box.style.borderColor='rgba(0,230,118,0.3)';box.style.background='rgba(0,230,118,0.05)';box.textContent='✅ Session active — '+d.sessionId;}
+    else{box.style.color='var(--red)';box.style.borderColor='rgba(255,77,109,0.3)';box.style.background='rgba(255,77,109,0.05)';box.textContent='❌ No session — open any eldorado.gg chat to capture it';}
+  });
+}
+function saveManualSession(){
+  var sid=document.getElementById('manual-session-id').value.trim();if(!sid){alert('Paste a sessionId first');return;}
+  fetch('/api/talkjs-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid})}).then(function(r){return r.json();}).then(function(d){if(d.ok)checkTalkSession();});
+}
+function testMsg(){
+  var reqId=document.getElementById('test-req-id').value.trim(),msg=document.getElementById('test-msg-text').value.trim();
+  if(!reqId){alert('Paste a request ID');return;}
+  var el=document.getElementById('test-msg-result');el.textContent='Sending...';el.style.color='var(--muted2)';
+  fetch('/api/test-message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId:reqId,message:msg||undefined})}).then(function(r){return r.json();}).then(function(d){
+    if(d.ok){ el.textContent='✅ Message sent!'; el.style.color='var(--green)'; return; }
+    var msg = '❌ Failed: '+(d.error||'unknown');
+    if(d.detail){ msg += '\n\nDetails:\n'+d.detail; }
+    if(d.raw){ msg += '\n\nRaw: '+d.raw; }
+    el.textContent = msg;
+    el.style.whiteSpace = 'pre-wrap';
+    el.style.color = 'var(--red)';
+    // Also dump to console for copy/paste
+    console.log('[test-message]', d);
+  });
+}
+
+var _feedCount = 0;
+function renderLiveFeed(activity){
+  var tbody = document.getElementById('live-feed-body');
+  if(!tbody) return;
+  var acts = (activity||[]).slice(0,20); // show last 20
+  var cnt = document.getElementById('feed-count');
+  var pulse = document.getElementById('feed-pulse');
+  if(!acts.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;font-size:11px;font-family:JetBrains Mono,monospace;">Waiting for orders...</td></tr>';
+    if(cnt) cnt.textContent='No activity yet';
+    return;
+  }
+  var newCount = acts.filter(function(a){return a.type==='Offer Sent';}).length;
+  if(cnt) cnt.textContent=newCount+' offer'+(newCount!==1?'s':'')+' sent · '+acts.length+' total';
+
+  // Pulse the dot if new entries
+  if(acts.length !== _feedCount){
+    _feedCount = acts.length;
+    if(pulse){
+      pulse.style.background='var(--gold)';pulse.style.boxShadow='0 0 8px var(--gold)';
+      setTimeout(function(){pulse.style.background='var(--green)';pulse.style.boxShadow='0 0 6px var(--green)';},300);
+    }
+  }
+
+  var rowClass={'Offer Sent':'feed-offer','Rejected':'feed-rejected','Immortal':'feed-immortal','Error':'feed-error'};
+  tbody.innerHTML = acts.map(function(a, idx){
+    var isNew = idx===0;
+    var boost = a.boost&&a.boost!=='?'?_esc(a.boost):'—';
+    var price = a.price?'<span style="color:var(--green);font-weight:700;font-family:JetBrains Mono,monospace">$'+Number(a.price).toFixed(2)+'</span>':'<span style="color:var(--muted)">—</span>';
+    var rc = rowClass[a.type]||'';
+    var typeColor = a.type==='Offer Sent'?'var(--green)':a.type==='Rejected'?'var(--muted2)':a.type==='Immortal'?'var(--gold)':a.type==='Error'?'var(--red)':'var(--muted2)';
+    var regionColor = a.region==='EU'?'var(--blue)':a.region==='NA'?'var(--gold)':'var(--muted2)';
+    return '<tr class="'+(isNew?rc+' feed-new':rc)+'">'
+      +'<td style="color:var(--muted);font-family:JetBrains Mono,monospace;font-size:9px;white-space:nowrap;padding:9px 14px;">'+_esc(a.time)+'</td>'
+      +'<td style="padding:9px 14px;">'+typeBadge(a.type)+'</td>'
+      +'<td style="color:'+regionColor+';font-weight:700;font-family:JetBrains Mono,monospace;font-size:11px;padding:9px 14px;">'+_esc(a.region||'—')+'</td>'
+      +'<td style="color:var(--text);font-size:11px;padding:9px 14px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+boost+'</td>'
+      +'<td style="padding:9px 14px;">'+price+'</td>'
+      +'<td style="color:var(--blue);font-size:10px;padding:9px 14px;font-family:JetBrains Mono,monospace;">'+_maskEmail(a.account)+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ── License countdown ticker (HH:MM:SS, always green; flips to red EXPIRED on hit zero)
+window._licExpAt = 0;
+function _tickLicenseTimer(){
+  // NOTE: |0 truncates to int32 — corrupts millisecond timestamps (~1.78e12) and falsely shows EXPIRED.
+  var exp = Number(window._licExpAt) || 0;
+  var val = document.getElementById('license-expiry-val');
+  var chip = document.getElementById('license-expiry-chip');
+  if(!val || !chip || !exp) return;
+  var ms = exp - Date.now();
+  if(ms <= 0){
+    val.textContent = 'EXPIRED';
+    val.style.color = '#ff4655';
+    chip.style.borderColor = 'rgba(255,70,85,.55)';
+    chip.style.background = 'rgba(255,70,85,.07)';
+    return;
+  }
+  var totalSec = Math.floor(ms/1000);
+  var d = Math.floor(totalSec/86400);
+  var h = Math.floor((totalSec%86400)/3600);
+  var m = Math.floor((totalSec%3600)/60);
+  var s = totalSec%60;
+  function pad(n){ return n<10?'0'+n:''+n; }
+  var txt;
+  if(d > 0)      txt = d + 'd ' + pad(h) + 'h:' + pad(m) + 'm';
+  else           txt = pad(h) + 'h:' + pad(m) + 'm:' + pad(s) + 's';
+  val.textContent = txt;
+  val.style.color = '#22c55e';
+  chip.style.borderColor = 'rgba(34,197,94,.35)';
+  chip.style.background = 'rgba(34,197,94,.06)';
+}
+setInterval(_tickLicenseTimer, 1000);
+
+function updateUI(d){
+  state=d;
+  // Live HH:MM:SS license countdown — always green, ticks every second.
+  // Below 0 = expired -> red flash and the bot's hot-path guards already block all work.
+  if(d.licenseExpiry && d.licenseExpiry > 0){
+    window._licExpAt = d.licenseExpiry;
+    var chip=document.getElementById('license-expiry-chip');
+    if(chip) chip.style.display='block';
+    _tickLicenseTimer();
+  }
+  renderLiveFeed(d.activity);
+  // ── Health bar ────────────────────────────────────────────────
+  try{
+    var h=d.health||{}, sT=d.statsToday||{}, sW=d.statsWeek||{};
+    function setPill(dotId, valId, ok, label){
+      var dot=document.getElementById(dotId), v=document.getElementById(valId);
+      if(dot) dot.className='dot '+(ok?'dot-green pulse':'dot-red');
+      if(v){ v.textContent=label; v.style.color=ok?'var(--green)':'var(--red)'; }
+    }
+    setPill('hp-bot-dot','hp-bot-val', !!h.botRunning, h.botRunning?'running':'stopped');
+    var tEl=document.getElementById('hp-tok-val');
+    if(tEl){ var tm=h.tokenMinsLeft||0; tEl.textContent=tm>0?(tm+'m'):'expired'; tEl.style.color=tm>10?'var(--green)':tm>3?'var(--gold)':'var(--red)'; }
+    var lEl=document.getElementById('hp-last-val');
+    if(lEl){
+      if(h.lastOrderAgoSec==null){ lEl.textContent='—'; lEl.style.color='var(--muted2)'; }
+      else {
+        var s=h.lastOrderAgoSec, txt=s<60?(s+'s ago'):s<3600?(Math.floor(s/60)+'m ago'):s<86400?(Math.floor(s/3600)+'h ago'):(Math.floor(s/86400)+'d ago');
+        lEl.textContent=txt;
+        lEl.style.color=s<600?'var(--green)':s<3600?'var(--gold)':'var(--red)';
+      }
+    }
+    var tdEl=document.getElementById('hp-today-val');
+    if(tdEl) tdEl.textContent='$'+(sT.revenue||0).toFixed(2)+' · '+(sT.offered||0)+' offers';
+    var wkEl=document.getElementById('hp-week-val');
+    if(wkEl) wkEl.textContent='$'+(sW.revenue||0).toFixed(2)+' · '+(sW.offered||0)+' offers';
+  }catch(_e){}
+  var seen=d.stats.seen||0,offered=d.stats.offered||0,msgs=d.stats.messaged||0,errs=d.stats.errors||0;
+  animNum(document.getElementById('s-seen'),seen,'');
+  var oEl=document.getElementById('s-offered');
+  if(parseInt(oEl.textContent)<offered){animNum(oEl,offered,'');oEl.closest('.stat-card').classList.add('stat-flash');setTimeout(function(){oEl.closest('.stat-card').classList.remove('stat-flash');},500);}
+  animNum(document.getElementById('s-msg'),msgs,'');
+  var errEl=document.getElementById('s-err');if(errEl)animNum(errEl,errs,'');
+  var rate=seen>0?Math.round(offered/seen*100):0;
+  var rEl=document.getElementById('s-rate-sub');if(rEl)rEl.textContent='Success rate: '+rate+'%';
+  var sEl=document.getElementById('s-seen-sub');if(sEl)sEl.textContent=d.botRunning?'Bot running ⚡':'Bot stopped';
+  function setBar(id,pct){var el=document.getElementById(id);if(el)el.style.width=Math.min(100,pct)+'%';}
+  setBar('bar-seen',Math.min(100,seen/50*100));setBar('bar-offered',rate);setBar('bar-msg',seen>0?Math.min(100,msgs/seen*100):0);
+  var euC=0,naC=0,skC=0,soldC=0;
+  (d.activity||[]).forEach(function(a){
+    if(a.type==='Offer Sent'){if(a.region==='EU')euC++;else if(a.region==='NA')naC++;}
+    if(a.type==='Rejected'||a.type==='Immortal')skC++;
+    if(a.type==='Sold Order')soldC++;
+  });
+  if(d.config) updateProfileUI(d.config.activeProfile||1);
+  var ec=document.getElementById('eu-count');if(ec)ec.textContent=euC;
+  var nc2=document.getElementById('na-count');if(nc2)nc2.textContent=naC;
+  var sc=document.getElementById('skip-count');if(sc)sc.textContent=skC;
+  var soldEl=document.getElementById('sold-count');if(soldEl){soldEl.textContent=soldC;if(soldC>0)soldEl.style.animation='breathe 1.5s ease-in-out infinite';}
+  var dwi=document.getElementById('discord-webhook-input');if(dwi&&d.config&&d.config.discordWebhook&&!dwi.value)dwi.value=d.config.discordWebhook||'';
+  // Telegram inputs + toggles + min-rank
+  if(d.config){
+    var tt=document.getElementById('tg-token-input');   if(tt && d.config.telegramBotToken && !tt.value) tt.value=d.config.telegramBotToken;
+    var tc=document.getElementById('tg-chatid-input');  if(tc && d.config.telegramChatID  && !tc.value) tc.value=d.config.telegramChatID;
+    setChk('tg-on-paid', !!d.config.telegramOnPaidOrder);
+    setChk('tg-on-offer',!!d.config.telegramOnOfferSent);
+    setChk('tg-on-immo', !!d.config.telegramOnImmortal);
+    setChk('tg-on-err',  !!d.config.telegramOnError);
+    setChk('tg-srv-eu',    d.config.telegramServerEU    !== false);
+    setChk('tg-srv-na',    d.config.telegramServerNA    !== false);
+    setChk('tg-srv-latam', d.config.telegramServerLATAM !== false);
+    setChk('tg-srv-ap',    d.config.telegramServerAP    !== false);
+    var mr=document.getElementById('tg-min-rank'); if(mr && d.config.telegramMinRank!==undefined) mr.value=d.config.telegramMinRank||'';
+  }
+  var badge=document.getElementById('nav-badge-activity'),ofCnt=(d.activity||[]).filter(function(a){return a.type==='Offer Sent';}).length;
+  if(badge){if(ofCnt>0){badge.style.display='inline-block';badge.textContent=ofCnt;}else badge.style.display='none';}
+  var sbBot=document.getElementById('sb-bot'),sbDot=document.getElementById('sb-dot'),mainBtn=document.getElementById('main-btn'),logDot=document.getElementById('log-status');
+  if(d.botRunning){
+    if(sbBot){sbBot.textContent='Running';sbBot.style.color='var(--green)';}if(sbDot)sbDot.className='dot dot-green';
+    if(mainBtn){mainBtn.textContent='■ STOP BOT';mainBtn.className='bot-btn btn-stop';}
+    if(logDot){logDot.style.background='var(--green)';logDot.style.boxShadow='0 0 6px var(--green)';}
+  }else{
+    if(sbBot){sbBot.textContent='Stopped';sbBot.style.color='var(--muted2)';}if(sbDot)sbDot.className='dot dot-red';
+    if(mainBtn){mainBtn.textContent='▶ START BOT';mainBtn.className='bot-btn btn-start';}
+    if(logDot){logDot.style.background='var(--muted)';logDot.style.boxShadow='';}
+  }
+  var tk=document.getElementById('sb-token'),tkDot=document.getElementById('tok-dot');
+  if(d.tokenMinsLeft>0){if(tk){tk.textContent=d.tokenMinsLeft+'m';tk.style.color=d.tokenMinsLeft>10?'var(--green)':d.tokenMinsLeft>3?'var(--gold)':'var(--red)';}if(tkDot)tkDot.className=d.tokenMinsLeft>3?'dot dot-yellow pulse':'dot dot-red';}
+  else{if(tk){tk.textContent='Expired';tk.style.color='var(--red)';}if(tkDot)tkDot.className='dot dot-red';}
+  function setChk(id,val){var el=document.getElementById(id);if(el)el.checked=!!val;}
+  function setInp(id,val){var el=document.getElementById(id);if(el)el.value=val;}
+  if(d.config&&!_userInteracting){
+    var c=d.config;
+    // Dashboard bot settings
+    setChk('tog-offer',c.autoOffer!==false);setChk('tog-msg',c.autoMessage!==false);setChk('tog-slowmode',c.slowMode||false);
+    setChk('tog-skip-custom-eu',!!c.skipCustomEU);setChk('tog-skip-custom-na',!!c.skipCustomNA);setChk('tog-skip-custom-latam',!!c.skipCustomLATAM);setChk('tog-skip-custom-ap',!!c.skipCustomAP);
+    // Settings page
+    setChk('stog-offer',c.autoOffer!==false);setChk('stog-msg',c.autoMessage!==false);
+    // Pricing tab toggles — region accept
+    setChk('ptog-eu',c.acceptEU!==false);setChk('ptog-na',c.acceptNA!==false);setChk('ptog-latam',c.acceptLATAM!==false);setChk('ptog-ap',c.acceptAP!==false);
+    // Net Wins tab toggles — NW accept per region
+    setChk('nwtog-eu-nw',c.acceptNetWinsEU!==false);setChk('nwtog-na-nw',c.acceptNetWinsNA!==false);setChk('nwtog-latam-nw',c.acceptNetWinsLATAM!==false);setChk('nwtog-ap-nw',c.acceptNetWinsAP!==false);
+    // Net Wins tab toggles — duo
+    setChk('nwtog-eu-duo',c.acceptEUDuo!==false);setChk('nwtog-na-duo',c.acceptNADuo!==false);setChk('nwtog-latam-duo',c.acceptLATAMDuo!==false);setChk('nwtog-ap-duo',c.acceptAPDuo!==false);
+    // Net Wins tab toggles — ascendant (mirrors Pricing values)
+    setChk('nwtog-eu-asc1',c.acceptEUAsc1!==false);setChk('nwtog-eu-asc2',c.acceptEUAsc2!==false);setChk('nwtog-eu-asc3',c.acceptEUAsc3!==false);
+    setChk('nwtog-na-asc1',c.acceptNAAsc1!==false);setChk('nwtog-na-asc2',c.acceptNAAsc2!==false);setChk('nwtog-na-asc3',c.acceptNAAsc3!==false);
+    setChk('nwtog-latam-asc1',c.acceptLATAMAsc1!==false);setChk('nwtog-latam-asc2',c.acceptLATAMAsc2!==false);setChk('nwtog-latam-asc3',c.acceptLATAMAsc3!==false);
+    setChk('nwtog-ap-asc1',c.acceptAPAsc1!==false);setChk('nwtog-ap-asc2',c.acceptAPAsc2!==false);setChk('nwtog-ap-asc3',c.acceptAPAsc3!==false);
+    // Net Wins tab toggles — immortal/radiant (mirrors Pricing values)
+    setChk('nwtog-eu-immo1',!!c.acceptEUImmo1);setChk('nwtog-eu-immo2',!!c.acceptEUImmo2);setChk('nwtog-eu-immo3',!!c.acceptEUImmo3);setChk('nwtog-eu-radiant',!!c.acceptEURadiant);
+    setChk('nwtog-na-immo1',!!c.acceptNAImmo1);setChk('nwtog-na-immo2',!!c.acceptNAImmo2);setChk('nwtog-na-immo3',!!c.acceptNAImmo3);setChk('nwtog-na-radiant',!!c.acceptNARadiant);
+    setChk('nwtog-latam-immo1',!!c.acceptLATAMImmo1);setChk('nwtog-latam-immo2',!!c.acceptLATAMImmo2);setChk('nwtog-latam-immo3',!!c.acceptLATAMImmo3);setChk('nwtog-latam-radiant',!!c.acceptLATAMRadiant);
+    setChk('nwtog-ap-immo1',!!c.acceptAPImmo1);setChk('nwtog-ap-immo2',!!c.acceptAPImmo2);setChk('nwtog-ap-immo3',!!c.acceptAPImmo3);setChk('nwtog-ap-radiant',!!c.acceptAPRadiant);
+    // Pricing tab toggles — net wins
+    // Pro-rate first step by RR (global)
+    setChk('tog-prorate-rr',!!c.prorateRR);
+    // v1.4.0 — Image URL hydration (replaces obsolete nymID override)
+    try {
+      var _imgInp=document.getElementById('msg-img-url');
+      if(_imgInp && !_imgInp.dataset.edited && document.activeElement!==_imgInp && typeof c.messageImageURL==='string'){
+        if(_imgInp.value !== c.messageImageURL) _imgInp.value=c.messageImageURL;
+      }
+    } catch(_){}
+    // Pricing tab toggles — duo
+    setChk('ptog-eu-duo',c.acceptEUDuo!==false);setChk('ptog-na-duo',c.acceptNADuo!==false);setChk('ptog-latam-duo',c.acceptLATAMDuo!==false);setChk('ptog-ap-duo',c.acceptAPDuo!==false);
+    // Pricing tab toggles — ascendant solo
+    setChk('ptog-eu-asc1',c.acceptEUAsc1!==false);setChk('ptog-eu-asc2',c.acceptEUAsc2!==false);setChk('ptog-eu-asc3',c.acceptEUAsc3!==false);
+    setChk('ptog-na-asc1',c.acceptNAAsc1!==false);setChk('ptog-na-asc2',c.acceptNAAsc2!==false);setChk('ptog-na-asc3',c.acceptNAAsc3!==false);
+    setChk('ptog-latam-asc1',c.acceptLATAMAsc1!==false);setChk('ptog-latam-asc2',c.acceptLATAMAsc2!==false);setChk('ptog-latam-asc3',c.acceptLATAMAsc3!==false);
+    setChk('ptog-ap-asc1',c.acceptAPAsc1!==false);setChk('ptog-ap-asc2',c.acceptAPAsc2!==false);setChk('ptog-ap-asc3',c.acceptAPAsc3!==false);
+    // Pricing tab toggles — immortal solo + radiant
+    setChk('ptog-eu-immo1',!!c.acceptEUImmo1);setChk('ptog-eu-immo2',!!c.acceptEUImmo2);setChk('ptog-eu-immo3',!!c.acceptEUImmo3);setChk('ptog-eu-radiant',!!c.acceptEURadiant);
+    setChk('ptog-na-immo1',!!c.acceptNAImmo1);setChk('ptog-na-immo2',!!c.acceptNAImmo2);setChk('ptog-na-immo3',!!c.acceptNAImmo3);setChk('ptog-na-radiant',!!c.acceptNARadiant);
+    setChk('ptog-latam-immo1',!!c.acceptLATAMImmo1);setChk('ptog-latam-immo2',!!c.acceptLATAMImmo2);setChk('ptog-latam-immo3',!!c.acceptLATAMImmo3);setChk('ptog-latam-radiant',!!c.acceptLATAMRadiant);
+    setChk('ptog-ap-immo1',!!c.acceptAPImmo1);setChk('ptog-ap-immo2',!!c.acceptAPImmo2);setChk('ptog-ap-immo3',!!c.acceptAPImmo3);setChk('ptog-ap-radiant',!!c.acceptAPRadiant);
+    // Pricing tab toggles — ascendant duo
+    setChk('ptog-eu-asc1duo',c.acceptEUAsc1Duo!==false);setChk('ptog-eu-asc2duo',c.acceptEUAsc2Duo!==false);setChk('ptog-eu-asc3duo',c.acceptEUAsc3Duo!==false);
+    setChk('ptog-na-asc1duo',c.acceptNAAsc1Duo!==false);setChk('ptog-na-asc2duo',c.acceptNAAsc2Duo!==false);setChk('ptog-na-asc3duo',c.acceptNAAsc3Duo!==false);
+    setChk('ptog-latam-asc1duo',c.acceptLATAMAsc1Duo!==false);setChk('ptog-latam-asc2duo',c.acceptLATAMAsc2Duo!==false);setChk('ptog-latam-asc3duo',c.acceptLATAMAsc3Duo!==false);
+    setChk('ptog-ap-asc1duo',c.acceptAPAsc1Duo!==false);setChk('ptog-ap-asc2duo',c.acceptAPAsc2Duo!==false);setChk('ptog-ap-asc3duo',c.acceptAPAsc3Duo!==false);
+    // Pricing tab toggles — immortal duo + radiant duo
+    setChk('ptog-eu-immo1duo',!!c.acceptEUImmo1Duo);setChk('ptog-eu-immo2duo',!!c.acceptEUImmo2Duo);setChk('ptog-eu-immo3duo',!!c.acceptEUImmo3Duo);setChk('ptog-eu-radiantduo',!!c.acceptEURadiantDuo);
+    setChk('ptog-na-immo1duo',!!c.acceptNAImmo1Duo);setChk('ptog-na-immo2duo',!!c.acceptNAImmo2Duo);setChk('ptog-na-immo3duo',!!c.acceptNAImmo3Duo);setChk('ptog-na-radiantduo',!!c.acceptNARadiantDuo);
+    setChk('ptog-latam-immo1duo',!!c.acceptLATAMImmo1Duo);setChk('ptog-latam-immo2duo',!!c.acceptLATAMImmo2Duo);setChk('ptog-latam-immo3duo',!!c.acceptLATAMImmo3Duo);setChk('ptog-latam-radiantduo',!!c.acceptLATAMRadiantDuo);
+    setChk('ptog-ap-immo1duo',!!c.acceptAPImmo1Duo);setChk('ptog-ap-immo2duo',!!c.acceptAPImmo2Duo);setChk('ptog-ap-immo3duo',!!c.acceptAPImmo3Duo);setChk('ptog-ap-radiantduo',!!c.acceptAPRadiantDuo);
+    // NW tab toggles — duo Asc/Immo
+    setChk('nwtog-eu-asc1duo',c.acceptEUAsc1Duo!==false);setChk('nwtog-eu-asc2duo',c.acceptEUAsc2Duo!==false);setChk('nwtog-eu-asc3duo',c.acceptEUAsc3Duo!==false);
+    setChk('nwtog-na-asc1duo',c.acceptNAAsc1Duo!==false);setChk('nwtog-na-asc2duo',c.acceptNAAsc2Duo!==false);setChk('nwtog-na-asc3duo',c.acceptNAAsc3Duo!==false);
+    setChk('nwtog-latam-asc1duo',c.acceptLATAMAsc1Duo!==false);setChk('nwtog-latam-asc2duo',c.acceptLATAMAsc2Duo!==false);setChk('nwtog-latam-asc3duo',c.acceptLATAMAsc3Duo!==false);
+    setChk('nwtog-ap-asc1duo',c.acceptAPAsc1Duo!==false);setChk('nwtog-ap-asc2duo',c.acceptAPAsc2Duo!==false);setChk('nwtog-ap-asc3duo',c.acceptAPAsc3Duo!==false);
+    setChk('nwtog-eu-immo1duo',!!c.acceptEUImmo1Duo);setChk('nwtog-eu-immo2duo',!!c.acceptEUImmo2Duo);setChk('nwtog-eu-immo3duo',!!c.acceptEUImmo3Duo);setChk('nwtog-eu-radiantduo',!!c.acceptEURadiantDuo);
+    setChk('nwtog-na-immo1duo',!!c.acceptNAImmo1Duo);setChk('nwtog-na-immo2duo',!!c.acceptNAImmo2Duo);setChk('nwtog-na-immo3duo',!!c.acceptNAImmo3Duo);setChk('nwtog-na-radiantduo',!!c.acceptNARadiantDuo);
+    setChk('nwtog-latam-immo1duo',!!c.acceptLATAMImmo1Duo);setChk('nwtog-latam-immo2duo',!!c.acceptLATAMImmo2Duo);setChk('nwtog-latam-immo3duo',!!c.acceptLATAMImmo3Duo);setChk('nwtog-latam-radiantduo',!!c.acceptLATAMRadiantDuo);
+    setChk('nwtog-ap-immo1duo',!!c.acceptAPImmo1Duo);setChk('nwtog-ap-immo2duo',!!c.acceptAPImmo2Duo);setChk('nwtog-ap-immo3duo',!!c.acceptAPImmo3Duo);setChk('nwtog-ap-radiantduo',!!c.acceptAPRadiantDuo);
+    if(c.cooldownSeconds!==undefined){setInp('cooldown',c.cooldownSeconds);setInp('scooldown',c.cooldownSeconds);}
+    if(c.deliveryEnumValue!==undefined){var ds=document.getElementById('delivery-select');if(ds&&document.activeElement!==ds)ds.value=c.deliveryEnumValue;}
+    var mt=document.getElementById('msg-tpl');if(mt&&c.messageTemplate&&!mt.dataset.edited)mt.value=c.messageTemplate;
+    if(d.config.email){
+      var em=String(d.config.email||''),at=em.indexOf('@');
+      var masked = at>=2 ? em.charAt(0)+'••••••'+em.charAt(at-1)+em.slice(at) : em;
+      document.getElementById('sb-email').textContent = masked;
+    }
+  }
+  var box=document.getElementById('log-box'),newLogs=(d.logs||[]).slice(logIdx);
+  newLogs.forEach(function(l){var div=document.createElement('div');div.className='le-'+(l.type||'info');div.textContent=l.time+' '+l.msg;box.appendChild(div);});
+  logIdx=d.logs?d.logs.length:0;
+  if(newLogs.length)box.scrollTop=box.scrollHeight;
+  if(document.getElementById('page-activity').classList.contains('active'))renderActivity();
+  syncAllLocks();
+}
+
+function playSoldSound(){
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    // Play 3 quick ascending beeps
+    [0,0.15,0.3].forEach(function(delay,i){
+      var osc=ctx.createOscillator();
+      var gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='sine';
+      osc.frequency.value=520+i*120; // 520, 640, 760 Hz
+      gain.gain.setValueAtTime(0,ctx.currentTime+delay);
+      gain.gain.linearRampToValueAtTime(0.4,ctx.currentTime+delay+0.03);
+      gain.gain.linearRampToValueAtTime(0,ctx.currentTime+delay+0.18);
+      osc.start(ctx.currentTime+delay);
+      osc.stop(ctx.currentTime+delay+0.2);
+    });
+  }catch(e){}
+}
+
+var _lastSoldCount=0;
+function loadStats(){
+  // Fetch completed/delivered orders for revenue stats
+  fetch('/api/sold-orders').then(function(r){return r.json();}).then(function(d){
+    var orders = d.orders||[];
+    var now = new Date();
+    var todayStr = now.toDateString();
+    var weekAgo = new Date(now-7*24*60*60*1000);
+    var monthStart = new Date(now.getFullYear(),now.getMonth(),1);
+
+    var today={rev:0,cnt:0}, week={rev:0,cnt:0}, month={rev:0,cnt:0}, total={rev:0,cnt:0};
+    var dailyMap = {};
+
+    orders.forEach(function(o){
+      var p = parseFloat(o.price)||0;
+      var d2 = o.date?new Date(o.date):null;
+      if(!d2||isNaN(d2)) return;
+      total.rev+=p; total.cnt++;
+      if(d2>=monthStart){month.rev+=p;month.cnt++;}
+      if(d2>=weekAgo){week.rev+=p;week.cnt++;}
+      if(d2.toDateString()===todayStr){today.rev+=p;today.cnt++;}
+      // Daily map
+      var dayKey=d2.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      dailyMap[dayKey]=(dailyMap[dayKey]||0)+p;
+    });
+
+    document.getElementById('rev-today').textContent='$'+today.rev.toFixed(0);
+    document.getElementById('rev-today-count').textContent=today.cnt+' orders';
+    document.getElementById('rev-week').textContent='$'+week.rev.toFixed(0);
+    document.getElementById('rev-week-count').textContent=week.cnt+' orders';
+    document.getElementById('rev-month').textContent='$'+month.rev.toFixed(0);
+    document.getElementById('rev-month-count').textContent=month.cnt+' orders';
+    document.getElementById('rev-total').textContent='$'+total.rev.toFixed(0);
+    document.getElementById('rev-total-count').textContent=total.cnt+' orders';
+
+    // Won orders table (completed + delivered)
+    var wonOrders = orders.filter(function(o){return o.status==='Completed'||o.status==='Delivered'||o.status==='Paid';});
+    var wonBody = document.getElementById('won-orders-body');
+    var wonLabel = document.getElementById('won-count-label');
+    if(wonLabel) wonLabel.textContent = wonOrders.length+' orders won';
+    if(wonBody){
+      wonBody.innerHTML = wonOrders.slice(0,20).map(function(o){
+        var sc={'Completed':'var(--green)','Delivered':'var(--blue)','Paid':'var(--gold)'};
+        return '<tr><td style="color:var(--muted2);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap">'+(o.date?new Date(o.date).toLocaleString():'—')+'</td>'
+          +'<td style="color:var(--blue);font-family:JetBrains Mono,monospace">'+o.buyer+'</td>'
+          +'<td style="color:var(--text)">'+o.game+'</td>'
+          +'<td style="color:var(--gold);font-weight:700;font-family:JetBrains Mono,monospace">$'+parseFloat(o.price||0).toFixed(2)+'</td>'
+          +'<td style="color:'+(sc[o.status]||'var(--muted2)')+';font-size:10px;font-family:JetBrains Mono,monospace">'+o.status+'</td></tr>';
+      }).join('')||'<tr><td colspan="5" class="empty-row">No completed orders yet</td></tr>';
+    }
+
+    // Daily bar chart (last 7 days)
+    var chartEl=document.getElementById('daily-chart');
+    var labelsEl=document.getElementById('daily-labels');
+    if(chartEl){
+      var days=[];
+      for(var i=6;i>=0;i--){var d3=new Date(now-i*24*60*60*1000);days.push(d3.toLocaleDateString('en-US',{month:'short',day:'numeric'}));}
+      var maxVal=Math.max.apply(null,days.map(function(d4){return dailyMap[d4]||0;}))||1;
+      chartEl.innerHTML=days.map(function(d5){
+        var val=dailyMap[d5]||0;
+        var h=Math.max(4,Math.round((val/maxVal)*100));
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">'
+          +'<div style="font-size:9px;color:var(--gold);font-family:JetBrains Mono,monospace">'+(val>0?'$'+val.toFixed(0):'')+'</div>'
+          +'<div style="width:100%;height:'+h+'px;background:linear-gradient(180deg,var(--gold),rgba(240,180,41,0.3));border-radius:4px 4px 0 0;transition:height .5s;"></div>'
+          +'</div>';
+      }).join('');
+      if(labelsEl) labelsEl.innerHTML=days.map(function(d6){return '<div style="flex:1;text-align:center;font-size:8px;color:var(--muted2);font-family:JetBrains Mono,monospace">'+d6+'</div>';}).join('');
+    }
+  }).catch(function(){});
+}
+
+function refreshSoldOrders(){
+  var upd=document.getElementById('sold-last-update');
+  if(upd) upd.textContent='Updating...';
+  fetch('/api/sold-orders').then(function(r){return r.json();}).then(function(d){
+    var now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(upd) upd.textContent='Updated: '+now;
+    var orders = d.orders||[];
+    var tbody = document.getElementById('sold-orders-body');
+    var cnt = document.getElementById('sold-page-count');
+    if(cnt) cnt.textContent = orders.length+' order'+(orders.length!==1?'s':'');
+    // Update notification badge
+    var notif = document.getElementById('sold-notif');
+    if(notif){
+      if(orders.length>0){notif.style.display='inline-block';notif.textContent=orders.length;}
+      else notif.style.display='none';
+    }
+    // Play sound if new sold orders arrived
+    if(orders.length > _lastSoldCount && _lastSoldCount >= 0){
+      if(orders.length > 0 && _lastSoldCount !== -1) playSoldSound();
+    }
+    _lastSoldCount = orders.length;
+    var soldCountEl = document.getElementById('sold-count');
+    if(soldCountEl) soldCountEl.textContent = orders.length;
+    if(!tbody) return;
+    if(!orders.length){tbody.innerHTML='<tr><td colspan="6" class="empty-row">No pending sold orders 🎉</td></tr>';return;}
+    tbody.innerHTML = orders.map(function(o){
+      var price = o.price?'<span style="color:var(--gold);font-weight:700;font-family:JetBrains Mono,monospace;font-size:13px">$'+parseFloat(o.price).toFixed(2)+'</span>':'—';
+      var date = o.orderedDate?new Date(o.orderedDate).toLocaleString():(o.date||'—');
+      var statusColors={'Paid':'var(--gold)','PendingDelivery':'var(--gold)','Delivered':'var(--blue)','Completed':'var(--green)','Cancelled':'var(--red)','Canceled':'var(--red)','Refunded':'var(--red)','Disputed':'var(--red)'};
+      var statusColor = statusColors[o.status]||'var(--muted2)';
+      return '<tr>'
+        +'<td style="color:var(--muted2);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap">'+date+'</td>'
+        +'<td style="color:var(--text);font-weight:600">'+( o.game||'Valorant')+'</td>'
+        +'<td style="color:var(--blue);font-family:JetBrains Mono,monospace">'+( o.buyer||'—')+'</td>'
+        +'<td>'+price+'</td>'
+        +'<td><span style="color:'+statusColor+';font-size:10px;font-family:JetBrains Mono,monospace;font-weight:600">'+(o.status||'PendingDelivery')+'</span></td>'
+        +'<td style="color:var(--muted2);font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(o.details||'—')+'</td>'
+        +'</tr>';
+    }).join('');
+  }).catch(function(){
+    var tbody=document.getElementById('sold-orders-body');
+    if(tbody) tbody.innerHTML='<tr><td colspan="6" class="empty-row" style="color:var(--red)">Could not load sold orders</td></tr>';
+  });
+}
+
+function fetchOrderStats(){
+  fetch('/api/order-stats').then(function(r){return r.json();}).then(function(d){
+    if(d.error) return;
+    function setS(id,val){var el=document.getElementById(id);if(el&&val!==undefined)el.textContent=val;}
+    setS('stat-pending',   d.pendingDelivery||0);
+    setS('stat-delivered', d.delivered||0);
+    setS('stat-completed', d.completed||0);
+    setS('stat-cancelled', d.canceled||0);
+    setS('stat-received',  d.received||0);
+    setS('sold-count',     d.pendingDelivery||0);
+    // Flash pending if > 0
+    var pel=document.getElementById('stat-pending');
+    if(pel&&(d.pendingDelivery||0)>0){pel.style.animation='breathe 1.5s infinite';}
+  }).catch(function(){});
+}
+function saveDiscord(){
+  var url = document.getElementById('discord-webhook-input').value.trim();
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discordWebhook:url})})
+    .then(function(r){return r.json();}).then(function(){
+      showToast('✅ Discord webhook saved!','success');
+    }).catch(function(){ showToast('❌ Save failed','error'); });
+}
+function saveTelegram(){
+  var token = document.getElementById('tg-token-input').value.trim();
+  var chatID = document.getElementById('tg-chatid-input').value.trim();
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramBotToken:token,telegramChatID:chatID})})
+    .then(function(r){return r.json();}).then(function(){
+      showToast('✅ Telegram saved!','success');
+    }).catch(function(){ showToast('❌ Save failed','error'); });
+}
+function testTelegram(){
+  var token = document.getElementById('tg-token-input').value.trim();
+  var chatID = document.getElementById('tg-chatid-input').value.trim();
+  if(!token || !chatID){ showToast('❌ Paste bot token and chat ID first','error'); return; }
+  fetch('/api/telegram-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramBotToken:token,telegramChatID:chatID})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d.ok) showToast('✅ Test sent! Bot @'+(d.bot||'?'),'success');
+      else showToast('❌ '+(d.error||'Test failed'),'error');
+    }).catch(function(){ showToast('❌ Network error','error'); });
+}
+function testDiscord(){
+  var url = document.getElementById('discord-webhook-input').value.trim();
+  if(!url){showToast('❌ Paste your webhook URL first then click Test','error');return;}
+  fetch('/api/discord-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({webhookUrl:url})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d.ok) showToast('✅ Test message sent to Discord!','success');
+      else showToast('❌ Failed: '+(d.error||'Check webhook URL'),'error');
+    }).catch(function(){ showToast('❌ No webhook set','error'); });
+}
+function showToast(msg, type){
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-family:JetBrains Mono,monospace;font-size:12px;z-index:9999;transition:opacity .3s;'+(type==='success'?'background:rgba(0,230,118,0.15);border:1px solid var(--green);color:var(--green);':'background:rgba(255,77,109,0.15);border:1px solid var(--red);color:var(--red);');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.remove();},300);},3000);
+}
+function setProfile(n){
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activeProfile:n})})
+    .then(function(){
+      showToast('✅ Profile '+n+' activated!','success');
+      refresh();
+    }).catch(function(){ showToast('❌ Failed','error'); });
+}
+
+function updateProfileUI(profile){
+  var b1=document.getElementById('profile1-btn');
+  var b2=document.getElementById('profile2-btn');
+  var info=document.getElementById('profile-info');
+  if(!b1||!b2) return;
+  if(profile===2){
+    b1.className='btn btn-secondary'; b1.style.flex='1';
+    b2.className='btn btn-primary';   b2.style.flex='1';
+    if(info) info.innerHTML='<span style="color:var(--gold)">🐢 SLOW MODE ON</span><br>8h → Day1<br>12h → Day1<br>Day1 → Day2<br>Day2 → Day3<br>Day3 → Day7';
+  } else {
+    b1.className='btn btn-primary';   b1.style.flex='1';
+    b2.className='btn btn-secondary'; b2.style.flex='1';
+    if(info) info.innerHTML='<span style="color:var(--green)">⚡ NORMAL MODE ON</span><br>Original delivery times<br>as set in pricing rules';
+  }
+}
+
+function refresh(){fetch('/api/state').then(function(r){return r.json();}).then(updateUI).catch(function(){});}
+function loadState(){refresh();}function loadActivity(){refresh();}
+document.getElementById('msg-tpl').addEventListener('input',function(){this.dataset.edited='1';});
+(function(){var el=document.getElementById('msg-img-url');if(el)el.addEventListener('input',function(){this.dataset.edited='1';});})();
+refresh();setInterval(refresh,2000);refreshSoldOrders();setInterval(refreshSoldOrders,5000);fetchOrderStats();setInterval(fetchOrderStats,5000);
+
+// ─── Config export/import ───
+function exportConfig(){
+  var status = document.getElementById('cfg-import-status');
+  if(status) status.textContent = 'Generating export…';
+  fetch('/api/config/export').then(function(r){
+    if(!r.ok) throw new Error('export failed');
+    var fname = 'eldobot-config-'+new Date().toISOString().slice(0,10)+'.json';
+    var disp = r.headers.get('Content-Disposition')||'';
+    var m = disp.match(/filename="([^"]+)"/); if(m) fname = m[1];
+    return r.blob().then(function(b){return {fname:fname, blob:b};});
+  }).then(function(d){
+    var url = URL.createObjectURL(d.blob);
+    var a = document.createElement('a'); a.href=url; a.download=d.fname; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);}, 1000);
+    if(status) status.textContent = '✓ Saved '+d.fname;
+  }).catch(function(e){
+    if(status) { status.textContent = '✗ '+e.message; status.style.color='var(--red)'; }
+  });
+}
+function importConfig(file){
+  var status = document.getElementById('cfg-import-status');
+  if(!file){ return; }
+  if(status) { status.textContent = 'Reading file…'; status.style.color=''; }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      var body = JSON.parse(e.target.result);
+      fetch('/api/config/import',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){return r.json();}).then(function(d){
+        if(d.ok){
+          if(status){ status.textContent='✓ Imported '+d.imported+' settings — refreshing…'; status.style.color='var(--green)'; }
+          setTimeout(function(){ location.reload(); }, 800);
+        } else {
+          if(status){ status.textContent='✗ '+(d.error||'import failed'); status.style.color='var(--red)'; }
+        }
+      });
+    } catch(err){
+      if(status){ status.textContent='✗ Invalid JSON: '+err.message; status.style.color='var(--red)'; }
+    }
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>

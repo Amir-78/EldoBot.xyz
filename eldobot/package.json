@@ -1,0 +1,21 @@
+{
+    "name": "eldobot",
+    "version": "1.0.0",
+    "main": "loader.js",
+    "bin": "loader.js",
+    "pkg": {
+        "assets": [
+            "dashboard.html"
+        ],
+        "targets": [
+            "node20-win-x64"
+        ],
+        "outputPath": "../dist"
+    },
+    "dependencies": {
+        "@babel/generator": "^8.0.0",
+        "@babel/parser": "^8.0.4",
+        "@babel/traverse": "^8.0.4",
+        "webcrack": "^2.15.1"
+    }
+}

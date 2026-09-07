@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ELDOBOT Token Sync</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#07090c;--surface:#0e1117;--card:#131820;--border:#1e2530;--accent:#FF4655;--accent2:#00E5CC;--text:#dde4f0;--muted:#556070;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;width:300px;min-height:200px;padding:0}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.logo{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px}
+.logo span{color:var(--accent)}
+.badge{font-size:8px;padding:2px 6px;border-radius:10px;background:rgba(0,229,204,.1);color:var(--accent2);border:1px solid rgba(0,229,204,.2);text-transform:uppercase;letter-spacing:.5px}
+.body{padding:14px}
+.status-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:12px}
+.status-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.status-row:last-child{margin-bottom:0}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--success);box-shadow:0 0 6px var(--success);animation:blink 2s infinite}
+.dot-red{background:var(--danger)}
+.dot-yellow{background:var(--warning)}
+.dot-gray{background:var(--muted)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.status-label{font-size:10px;color:var(--muted)}
+.status-value{font-size:10px;color:var(--text);margin-left:auto}
+.btn-sync{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-family:'JetBrains Mono';font-size:12px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:.15s;margin-bottom:10px}
+.btn-sync:hover{background:#ff6677}
+.btn-sync:active{transform:scale(.98)}
+.btn-sync:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.btn-open{width:100%;padding:8px;background:transparent;color:var(--accent2);border:1px solid rgba(0,229,204,.3);border-radius:4px;font-family:'JetBrains Mono';font-size:11px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:.15s}
+.btn-open:hover{background:rgba(0,229,204,.08)}
+.error-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:4px;padding:10px;font-size:10px;color:var(--danger);line-height:1.7;margin-bottom:10px}
+.ok-box{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:4px;padding:10px;font-size:10px;color:var(--success);line-height:1.7;margin-bottom:10px}
+.info-box{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:4px;padding:10px;font-size:10px;color:var(--warning);line-height:1.7;margin-bottom:10px}
+.divider{border:none;border-top:1px solid var(--border);margin:10px 0}
+.setting-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:10px}
+.setting-label{color:var(--muted);flex:1}
+.url-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:3px;padding:5px 8px;font-family:'JetBrains Mono';font-size:10px;outline:none;margin-bottom:6px}
+.url-input:focus{border-color:var(--accent)}
+.btn-save-url{padding:5px 12px;background:var(--surface);color:var(--accent2);border:1px solid rgba(0,229,204,.3);border-radius:3px;font-family:'JetBrains Mono';font-size:10px;cursor:pointer}
+.last-sync{font-size:9px;color:var(--muted);text-align:center;margin-top:8px}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">ELDO<span>BOT</span></div>
+  <span class="badge">Token Sync</span>
+</div>
+
+<div class="body">
+  <div class="status-card" id="status-card">
+    <div class="status-row">
+      <div class="dot dot-gray" id="conn-dot"></div>
+      <span class="status-label">Bot Server</span>
+      <span class="status-value" id="conn-val">Checking...</span>
+    </div>
+    <div class="status-row">
+      <div class="dot dot-gray" id="cookie-dot"></div>
+      <span class="status-label">Eldorado Login</span>
+      <span class="status-value" id="cookie-val">Checking...</span>
+    </div>
+    <div class="status-row">
+      <div class="dot dot-gray" id="token-dot"></div>
+      <span class="status-label">Token</span>
+      <span class="status-value" id="token-val">-</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label" style="color:var(--muted);font-size:9px">Account</span>
+      <span class="status-value" style="color:var(--accent2);font-size:9px" id="email-val">-</span>
+    </div>
+  </div>
+
+  <div id="msg-box" style="display:none"></div>
+
+  <button class="btn-sync" id="btn-sync" onclick="doSync()">
+    &#9654; Sync Tokens Now
+  </button>
+
+  <button class="btn-open" onclick="openDashboard()">
+    &#128279; Open Dashboard
+  </button>
+
+  <button class="btn-open" style="margin-top:6px;color:var(--warning);border-color:rgba(245,158,11,.3)" onclick="forceReconnect()">
+    &#8635; Force Reconnect
+  </button>
+
+  <hr class="divider">
+
+  <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Bot Server URL</div>
+  <input class="url-input" id="url-input" value="http://localhost:3000" placeholder="http://localhost:3000">
+  <button class="btn-save-url" onclick="saveUrl()">Save URL</button>
+
+  <div class="last-sync" id="last-sync">Never synced</div>
+</div>
+
+<script>
+function showMsg(msg, type) {
+  var box = document.getElementById('msg-box');
+  box.style.display = 'block';
+  box.className = type + '-box';
+  box.textContent = msg;
+  setTimeout(function(){ box.style.display='none'; }, 4000);
+}
+
+function openDashboard() {
+  chrome.storage.local.get('botUrl', function(d) {
+    var url = d.botUrl || 'http://localhost:3000';
+    chrome.tabs.create({ url: url });
+  });
+}
+
+function saveUrl() {
+  var url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+  chrome.runtime.sendMessage({ action: 'setBotUrl', url: url }, function() {
+    showMsg('Bot URL saved: ' + url, 'ok');
+  });
+}
+
+function forceReconnect() {
+  chrome.runtime.sendMessage({ action: 'forceReconnect' }, function() {
+    showMsg('Reconnecting — refresh eldorado.gg if token still missing', 'ok');
+    setTimeout(loadStatus, 1500);
+  });
+}
+
+function doSync() {
+  var btn = document.getElementById('btn-sync');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Syncing...';
+  chrome.runtime.sendMessage({ action: 'sync' }, function() {
+    setTimeout(function() {
+      loadStatus();
+      btn.disabled = false;
+      btn.innerHTML = '&#9654; Sync Tokens Now';
+    }, 2000);
+  });
+}
+
+function loadStatus() {
+  chrome.runtime.sendMessage({ action: 'getStatus' }, function(data) {
+    if (!data) return;
+
+    var status = data.syncStatus || 'idle';
+    var connDot  = document.getElementById('conn-dot');
+    var connVal  = document.getElementById('conn-val');
+    var cookieDot= document.getElementById('cookie-dot');
+    var cookieVal= document.getElementById('cookie-val');
+    var tokenDot = document.getElementById('token-dot');
+    var tokenVal = document.getElementById('token-val');
+    var emailVal = document.getElementById('email-val');
+    var lastSync = document.getElementById('last-sync');
+
+    if (data.botUrl) document.getElementById('url-input').value = data.botUrl;
+
+    // Bot connection
+    if (status === 'ok') {
+      connDot.className = 'dot dot-green';
+      connVal.textContent = 'Connected';
+      connVal.style.color = 'var(--success)';
+    } else if (status === 'bot_offline') {
+      connDot.className = 'dot dot-red';
+      connVal.textContent = 'Offline';
+      connVal.style.color = 'var(--danger)';
+      showMsg('Bot is offline! Run START_DASHBOARD.bat first.', 'error');
+    } else if (status === 'bot_error') {
+      connDot.className = 'dot dot-yellow';
+      connVal.textContent = 'Error';
+      connVal.style.color = 'var(--warning)';
+    } else {
+      connDot.className = 'dot dot-gray';
+      connVal.textContent = 'Unknown';
+    }
+
+    // Cookie / login status
+    if (status === 'no_cookies') {
+      cookieDot.className = 'dot dot-red';
+      cookieVal.textContent = 'Not logged in';
+      cookieVal.style.color = 'var(--danger)';
+      showMsg('Not logged into eldorado.gg! Open eldorado.gg and log in first.', 'error');
+    } else if (status === 'ok' || status === 'syncing') {
+      cookieDot.className = 'dot dot-green';
+      cookieVal.textContent = 'Logged in';
+      cookieVal.style.color = 'var(--success)';
+    } else {
+      cookieDot.className = 'dot dot-gray';
+      cookieVal.textContent = 'Unknown';
+    }
+
+    // Token status
+    if (data.minsLeft !== undefined) {
+      var mins = data.minsLeft;
+      if (mins > 30) {
+        tokenDot.className = 'dot dot-green';
+        tokenVal.style.color = 'var(--success)';
+        tokenVal.textContent = mins + ' min left';
+      } else if (mins > 5) {
+        tokenDot.className = 'dot dot-yellow';
+        tokenVal.style.color = 'var(--warning)';
+        tokenVal.textContent = mins + ' min left';
+      } else {
+        tokenDot.className = 'dot dot-red';
+        tokenVal.style.color = 'var(--danger)';
+        tokenVal.textContent = 'Expiring soon!';
+      }
+    }
+
+    // Email
+    if (data.email) {
+      emailVal.textContent = data.email;
+    }
+
+    // Last sync time
+    if (data.lastSync) {
+      var d2 = new Date(data.lastSync);
+      lastSync.textContent = 'Last sync: ' + d2.toLocaleTimeString();
+    }
+
+    // Show error if any
+    if (data.lastError && status !== 'ok') {
+      showMsg(data.lastError, 'error');
+    }
+  });
+}
+
+// Load on open
+loadStatus();
+// Refresh every 3 seconds while popup open
+setInterval(loadStatus, 3000);
+</script>
+</body>
+</html>
